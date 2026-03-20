@@ -21,8 +21,6 @@ from app.audio_mixer import mix_podcast
 
 router = APIRouter(prefix="/podcast", tags=["podcast"])
 
-settings = get_settings()
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Request / Response schemas
@@ -198,7 +196,7 @@ async def synthesize_form(
     """
     request_id = uuid.uuid4().hex[:8]
     language = language.lower().strip()
-    supported = settings.supported_languages
+    supported = get_settings().supported_languages
     if language not in supported:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

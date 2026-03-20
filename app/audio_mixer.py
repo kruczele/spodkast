@@ -1,10 +1,17 @@
 """
 Audio mixing utilities for Spodkast.
 Handles injection of intro/outro segments and audio assembly using pydub.
+
+System requirement: ffmpeg must be installed and on PATH.
+Install: https://ffmpeg.org/download.html
+  macOS:  brew install ffmpeg
+  Ubuntu: apt-get install ffmpeg
+  Windows: winget install ffmpeg
 """
 
 import io
 import os
+import shutil
 from pathlib import Path
 from typing import Optional
 from loguru import logger
@@ -12,11 +19,21 @@ from pydub import AudioSegment
 from pydub.effects import normalize
 
 
+def check_ffmpeg() -> None:
+    """Raise RuntimeError if ffmpeg binary is not available on PATH."""
+    if shutil.which("ffmpeg") is None:
+        raise RuntimeError(
+            "ffmpeg is not installed or not on PATH. "
+            "Spodkast requires ffmpeg for audio processing. "
+            "Install it and ensure it is accessible from the command line.\n"
+            "  macOS:  brew install ffmpeg\n"
+            "  Ubuntu: apt-get install ffmpeg\n"
+            "  Windows: winget install ffmpeg"
+        )
+
+
 # Crossfade duration (ms) for smooth intro/outro transitions
 CROSSFADE_MS = 1500
-
-# Short silence padding between segments (ms)
-SILENCE_BETWEEN_MS = 500
 
 
 def _load_audio(source: bytes | str | Path) -> AudioSegment:
@@ -53,9 +70,11 @@ def mix_podcast(
     Mix narration audio with optional intro and outro segments.
 
     Assembly order:
-        [intro] → [short silence] → [narration] → [short silence] → [outro]
+        [intro] → [narration] → [outro]
 
     Crossfade is applied between segments for a smooth listening experience.
+    When no intro or outro is provided, the narration bytes are returned
+    directly without lossy re-encoding through pydub (fast path).
 
     Args:
         narration_bytes: Raw bytes of the synthesized narration audio.
@@ -68,6 +87,21 @@ def mix_podcast(
     Returns:
         Mixed audio as bytes.
     """
+    has_intro = bool(intro_path and os.path.exists(intro_path))
+    has_outro = bool(outro_path and os.path.exists(outro_path))
+
+    # Fast path: no mixing needed — avoid lossy re-encode through pydub
+    if not has_intro and not has_outro:
+        if intro_path and not has_intro:
+            logger.warning(f"Intro file not found: {intro_path}, skipping")
+        if outro_path and not has_outro:
+            logger.warning(f"Outro file not found: {outro_path}, skipping")
+        logger.info("No intro/outro to mix — returning narration directly")
+        return narration_bytes
+
+    # Full mixing path — requires ffmpeg
+    check_ffmpeg()
+
     # Load narration
     narration = _load_audio(narration_bytes)
     if normalize_audio:
@@ -76,8 +110,8 @@ def mix_podcast(
 
     segments = []
 
-    # Add intro
-    if intro_path and os.path.exists(intro_path):
+    # Add intro (existence already confirmed via has_intro above)
+    if has_intro:
         try:
             intro = _load_audio(intro_path)
             if normalize_audio:
@@ -86,13 +120,11 @@ def mix_podcast(
             logger.info(f"Intro loaded: {len(intro) / 1000:.1f}s")
         except Exception as e:
             logger.warning(f"Failed to load intro, skipping: {e}")
-    elif intro_path:
-        logger.warning(f"Intro file not found: {intro_path}, skipping")
 
     segments.append(narration)
 
-    # Add outro
-    if outro_path and os.path.exists(outro_path):
+    # Add outro (existence already confirmed via has_outro above)
+    if has_outro:
         try:
             outro = _load_audio(outro_path)
             if normalize_audio:
@@ -101,8 +133,6 @@ def mix_podcast(
             logger.info(f"Outro loaded: {len(outro) / 1000:.1f}s")
         except Exception as e:
             logger.warning(f"Failed to load outro, skipping: {e}")
-    elif outro_path:
-        logger.warning(f"Outro file not found: {outro_path}, skipping")
 
     # Assemble final podcast audio
     if len(segments) == 1:
@@ -129,16 +159,15 @@ def _join_with_crossfade(segments: list[AudioSegment]) -> AudioSegment:
     """
     Join multiple audio segments with crossfade transitions.
 
-    A short silence is padded between segments before crossfading to prevent
-    abrupt cuts.
+    Crossfade is applied directly between audio segments (no silence prepend,
+    which would cause a double-fade artifact where the outgoing segment fades
+    into silence before the incoming segment fades up).
     """
-    silence = AudioSegment.silent(duration=SILENCE_BETWEEN_MS)
     result = segments[0]
 
     for seg in segments[1:]:
-        # Pad with silence for breathing room, then crossfade
-        padded = silence + seg
-        xfade = min(CROSSFADE_MS, len(result) // 2, len(padded) // 2)
-        result = result.append(padded, crossfade=xfade)
+        # Crossfade directly into the audio content of the next segment
+        xfade = min(CROSSFADE_MS, len(result) // 2, len(seg) // 2)
+        result = result.append(seg, crossfade=xfade)
 
     return result

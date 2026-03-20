@@ -1,44 +1,59 @@
 """
 Configuration management for Spodkast service.
 Loads settings from environment variables / .env file.
+
+pydantic-settings v2 note:
+  Field names are matched to env vars by converting to uppercase automatically.
+  The deprecated `Field(env=...)` kwarg from v1 is NOT used here.
+  Fields are named to match their env var counterparts (lowercase field -> UPPERCASE env var).
 """
 
 from pydantic_settings import BaseSettings
-from pydantic import Field
 from typing import Dict
 from functools import lru_cache
 
 
 class Settings(BaseSettings):
     # ElevenLabs API
-    elevenlabs_api_key: str = Field(..., env="ELEVENLABS_API_KEY")
-    elevenlabs_model_id: str = Field(
-        default="eleven_multilingual_v2", env="ELEVENLABS_MODEL_ID"
-    )
+    # Env var: ELEVENLABS_API_KEY (required — no default)
+    elevenlabs_api_key: str
+
+    # Env var: ELEVENLABS_MODEL_ID
+    elevenlabs_model_id: str = "eleven_multilingual_v2"
 
     # Voice IDs per language
-    voice_id_en: str = Field(
-        default="21m00Tcm4TlvDq8ikWAM", env="VOICE_ID_EN"
-    )  # Rachel - calm, warm English voice
-    voice_id_pl: str = Field(
-        default="21m00Tcm4TlvDq8ikWAM", env="VOICE_ID_PL"
-    )  # Polish (multilingual model)
-    voice_id_es: str = Field(
-        default="21m00Tcm4TlvDq8ikWAM", env="VOICE_ID_ES"
-    )  # Spanish (multilingual model)
+    # Env var: VOICE_ID_EN — Rachel: calm, warm English voice
+    voice_id_en: str = "21m00Tcm4TlvDq8ikWAM"
+
+    # Env var: VOICE_ID_PL — Polish (multilingual model)
+    voice_id_pl: str = "21m00Tcm4TlvDq8ikWAM"
+
+    # Env var: VOICE_ID_ES — Spanish (multilingual model)
+    voice_id_es: str = "21m00Tcm4TlvDq8ikWAM"
 
     # Audio settings
-    audio_output_format: str = Field(
-        default="mp3_44100_128", env="AUDIO_OUTPUT_FORMAT"
-    )
-    output_dir: str = Field(default="./output", env="OUTPUT_DIR")
+    # Env var: AUDIO_OUTPUT_FORMAT
+    audio_output_format: str = "mp3_44100_128"
 
-    # Service
-    host: str = Field(default="0.0.0.0", env="HOST")
-    port: int = Field(default=8000, env="PORT")
-    log_level: str = Field(default="INFO", env="LOG_LEVEL")
+    # Env var: OUTPUT_DIR
+    output_dir: str = "./output"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    # Service settings
+    # Env var: HOST
+    host: str = "0.0.0.0"
+
+    # Env var: PORT
+    port: int = 8000
+
+    # Env var: LOG_LEVEL
+    log_level: str = "INFO"
+
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        # Match UPPER_CASE env vars to lower_case field names
+        "case_sensitive": False,
+    }
 
     @property
     def voice_map(self) -> Dict[str, str]:

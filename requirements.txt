@@ -1,3 +1,9 @@
+# Requires Python 3.10+  (uses union type syntax: X | Y, list[X])
+# System requirement: ffmpeg must be installed (for audio mixing with intro/outro)
+#   macOS:  brew install ffmpeg
+#   Ubuntu: apt-get install ffmpeg
+#   Windows: winget install ffmpeg
+
 fastapi==0.115.5
 uvicorn[standard]==0.32.1
 python-multipart==0.0.12
@@ -9,3 +15,7 @@ python-dotenv==1.0.1
 httpx==0.28.0
 aiofiles==24.1.0
 loguru==0.7.3
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.24.0

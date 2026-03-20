@@ -5,6 +5,7 @@ Entry point for the FastAPI application.
 
 import sys
 import os
+import shutil
 from pathlib import Path
 from contextlib import asynccontextmanager
 
@@ -51,11 +52,23 @@ def configure_logging(level: str = "INFO") -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
-    configure_logging(settings.log_level)
 
-    # Ensure output and logs directories exist
+    # Ensure output and logs directories exist BEFORE configuring logging
+    # (the file sink needs the logs/ dir to already exist)
     Path(settings.output_dir).mkdir(parents=True, exist_ok=True)
     Path("logs").mkdir(parents=True, exist_ok=True)
+
+    configure_logging(settings.log_level)
+
+    # Fail fast: ffmpeg is required for audio mixing
+    if shutil.which("ffmpeg") is None:
+        logger.error(
+            "ffmpeg is not installed or not on PATH. "
+            "Spodkast requires ffmpeg for audio processing when using intro/outro mixing. "
+            "Install it: macOS: brew install ffmpeg | Ubuntu: apt-get install ffmpeg"
+        )
+        # Don't crash startup — service can still handle plain synthesize requests
+        # (fast path avoids pydub). Log the warning so operators are aware.
 
     logger.info("🎙️  Spodkast service starting up")
     logger.info(f"   Supported languages: {settings.supported_languages}")
@@ -83,11 +96,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — allow all origins for PoC; restrict in production
+# CORS — wildcard origin without credentials (CORS spec forbids combining
+# allow_origins=["*"] with allow_credentials=True; browsers reject such responses).
+# For production: replace allow_origins with specific frontend origins and
+# set allow_credentials=True if cookies/auth headers are needed.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

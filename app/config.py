@@ -18,22 +18,29 @@ class Settings(BaseSettings):
     # Env var: ELEVENLABS_API_KEY (required — no default)
     elevenlabs_api_key: str
 
+    # Anthropic API (required for LLM script generation)
+    # Env var: ANTHROPIC_API_KEY
+    anthropic_api_key: str | None = None
+
     # Env var: ELEVENLABS_MODEL_ID
     elevenlabs_model_id: str = "eleven_multilingual_v2"
 
     # Voice IDs per language
-    # Env var: VOICE_ID_EN — Rachel: calm, warm English voice
-    voice_id_en: str = "21m00Tcm4TlvDq8ikWAM"
+    # Env var: VOICE_ID_EN — Nicole: soft whisper/ASMR voice, ideal for sleep narration
+    voice_id_en: str = "piTKgcLEGmPE4e6mEKli"
 
-    # Env var: VOICE_ID_PL — Polish (multilingual model)
-    voice_id_pl: str = "21m00Tcm4TlvDq8ikWAM"
+    # Env var: VOICE_ID_PL — Nicole: same whisper voice, eleven_multilingual_v2 handles Polish
+    voice_id_pl: str = "piTKgcLEGmPE4e6mEKli"
 
-    # Env var: VOICE_ID_ES — Spanish (multilingual model)
-    voice_id_es: str = "21m00Tcm4TlvDq8ikWAM"
+    # Env var: VOICE_ID_ES — Nicole: same whisper voice, eleven_multilingual_v2 handles Spanish
+    voice_id_es: str = "piTKgcLEGmPE4e6mEKli"
 
     # Audio settings
     # Env var: AUDIO_OUTPUT_FORMAT
     audio_output_format: str = "mp3_44100_128"
+
+    # Env var: TTS_TIMEOUT_SECONDS — ElevenLabs read timeout; long scripts need 120s+
+    tts_timeout_seconds: int = 180
 
     # Env var: OUTPUT_DIR
     output_dir: str = "./output"

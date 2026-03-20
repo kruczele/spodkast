@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from app.config import get_settings
@@ -110,6 +111,9 @@ app.add_middleware(
 
 # Routers
 app.include_router(podcast.router)
+
+# Static UI — mount after routers so /podcast/* takes precedence
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 
 # ──────────────────────────────────────────────────────────────────────────────

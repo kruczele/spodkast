@@ -12,30 +12,43 @@ All voices below support the eleven_multilingual_v2 model.
 # ──────────────────────────────────────────────────────────────────────────────
 
 ENGLISH_VOICES = {
-    "Rachel": {
-        "id": "21m00Tcm4TlvDq8ikWAM",
-        "description": "Calm, warm, and gentle. Default Spodkast voice.",
+    # Free-tier API compatible voices (tested and confirmed working)
+    "Sarah": {
+        "id": "EXAVITQu4vr4xnSDxMaL",
+        "description": "Mature, reassuring, confident. Default Spodkast voice. Free tier compatible.",
         "style": "calm narration",
+        "free_tier": True,
     },
     "Matilda": {
         "id": "XrExE9yKIg1WjnnlVkGX",
-        "description": "Soft, friendly, and approachable. Great for bedtime stories.",
+        "description": "Knowledgeable, professional. Great for bedtime article narration.",
         "style": "warm storytelling",
+        "free_tier": True,
     },
     "Alice": {
         "id": "Xb7hH8MSUJpSbSDYk0k2",
-        "description": "Confident yet gentle. Good for longer articles.",
+        "description": "Clear, engaging educator. Good for longer articles.",
         "style": "professional calm",
+        "free_tier": True,
     },
-    "Aria": {
-        "id": "9BWtsMINqrJLrRacOk9x",
-        "description": "Expressive and natural. Slight warmth in the tone.",
-        "style": "natural warmth",
+    "Lily": {
+        "id": "pFZP5JQG7iQjIQuC4Bku",
+        "description": "Velvety actress. Very soothing for sleepy-time reads.",
+        "style": "velvet warmth",
+        "free_tier": True,
     },
-    "Bill": {
-        "id": "pqHfZKP75CvOlQylNhV4",
-        "description": "Deep, steady, and soothing. Great for evening reads.",
+    "George": {
+        "id": "JBFqnCBsd6RMkjVDRZzb",
+        "description": "Warm, captivating storyteller. Great male voice for calm narration.",
         "style": "deep calm",
+        "free_tier": True,
+    },
+    # Paid-tier only voices (paid API subscription required)
+    "Rachel": {
+        "id": "21m00Tcm4TlvDq8ikWAM",
+        "description": "Calm, warm, gentle. Popular choice for goodnight reads. Requires paid plan.",
+        "style": "calm narration",
+        "free_tier": False,
     },
 }
 
@@ -44,15 +57,25 @@ ENGLISH_VOICES = {
 # ──────────────────────────────────────────────────────────────────────────────
 
 MULTILINGUAL_VOICES = {
+    # Free-tier API compatible multilingual voices (tested EN, PL, ES)
+    "Sarah (multilingual)": {
+        "id": "EXAVITQu4vr4xnSDxMaL",
+        "languages": ["en", "pl", "es", "de", "fr", "it", "pt"],
+        "description": "Default Spodkast voice. Works well in Polish and Spanish. Free tier compatible.",
+        "free_tier": True,
+    },
+    "George (multilingual)": {
+        "id": "JBFqnCBsd6RMkjVDRZzb",
+        "languages": ["en", "pl", "es", "de", "fr", "it"],
+        "description": "Warm, captivating storyteller. Excellent for Polish narration.",
+        "free_tier": True,
+    },
+    # Paid-tier only
     "Rachel (multilingual)": {
         "id": "21m00Tcm4TlvDq8ikWAM",
         "languages": ["en", "pl", "es", "de", "fr", "it", "pt"],
-        "description": "Default Spodkast voice. Works well in Polish and Spanish.",
-    },
-    "Charlotte": {
-        "id": "XB0fDUnXU5powFXDhCwa",
-        "languages": ["en", "pl", "es", "de", "fr", "sv"],
-        "description": "Swedish-origin voice, very calm. Excellent for Polish narration.",
+        "description": "Popular calm voice for multilingual narration. Requires paid plan.",
+        "free_tier": False,
     },
 }
 

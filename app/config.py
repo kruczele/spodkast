@@ -22,14 +22,17 @@ class Settings(BaseSettings):
     elevenlabs_model_id: str = "eleven_multilingual_v2"
 
     # Voice IDs per language
-    # Env var: VOICE_ID_EN — Rachel: calm, warm English voice
-    voice_id_en: str = "21m00Tcm4TlvDq8ikWAM"
+    # Env var: VOICE_ID_EN
+    # Sarah (EXAVITQu4vr4xnSDxMaL) — Mature, Reassuring, Confident.
+    # Works on the free API tier. For paid plans, Rachel (21m00Tcm4TlvDq8ikWAM)
+    # is also a popular calm/warm choice.
+    voice_id_en: str = "EXAVITQu4vr4xnSDxMaL"
 
-    # Env var: VOICE_ID_PL — Polish (multilingual model)
-    voice_id_pl: str = "21m00Tcm4TlvDq8ikWAM"
+    # Env var: VOICE_ID_PL — Polish via eleven_multilingual_v2
+    voice_id_pl: str = "EXAVITQu4vr4xnSDxMaL"
 
-    # Env var: VOICE_ID_ES — Spanish (multilingual model)
-    voice_id_es: str = "21m00Tcm4TlvDq8ikWAM"
+    # Env var: VOICE_ID_ES — Spanish via eleven_multilingual_v2
+    voice_id_es: str = "EXAVITQu4vr4xnSDxMaL"
 
     # Audio settings
     # Env var: AUDIO_OUTPUT_FORMAT

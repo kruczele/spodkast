@@ -181,6 +181,22 @@
     .job-badge.running { color: #7ab8e8; }
     .job-badge.done    { color: #7ec99a; }
     .job-badge.failed  { color: #e87a7a; }
+
+    /* ── Mobile responsiveness ── */
+    @media (max-width: 600px) {
+      body { padding: 0.75rem; }
+      .card { padding: 1rem; border-radius: 8px; }
+      .options { grid-template-columns: 1fr; }
+      .slider-grid { grid-template-columns: 72px 1fr 34px; }
+      .synth-settings { padding: 0.75rem; }
+      .drop-zone { padding: 1.5rem; }
+      .review-toolbar { gap: 0.5rem; }
+      .episode-actions { gap: 0.4rem; }
+      .lang-bar { gap: 0.3rem; }
+      h1 { font-size: 1.2rem; }
+      .generate-all-row { flex-direction: column; }
+      .generate-all-row .btn { width: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -553,10 +569,11 @@
     scriptEl.readOnly = true;
     if (actionsEl) {
       actionsEl.querySelector('.actions-left').innerHTML =
-        `<span style="font-size:0.78rem; color:#7ab8e8"><span class="spinner"></span> Translating to ${LANG_NAMES[lang] || lang.toUpperCase()}…</span>`;
+        `<span style="font-size:0.78rem; color:#7ab8e8"><span class="spinner"></span> Translating to ${LANG_NAMES[lang] || lang.toUpperCase()}… (stage 1/2)</span>`;
     }
 
     let text = '';
+    let inStage2 = false;
     try {
       const resp = await fetch(`/podcast/sessions/${session_id}/episodes/${index}/translate`, {
         method: 'POST',
@@ -575,7 +592,18 @@
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        text += decoder.decode(value, { stream: true });
+        const chunk = decoder.decode(value, { stream: true });
+        // NUL sentinel (\x00) signals the switch from Stage 1 (literal translation)
+        // to Stage 2 (idiomatic localization). Clear the textarea and start fresh.
+        if (chunk.includes('\x00')) {
+          const parts = chunk.split('\x00');
+          text = parts[parts.length - 1]; // discard Stage 1, start Stage 2
+          inStage2 = true;
+          if (actionsEl) actionsEl.querySelector('.actions-left').innerHTML =
+            `<span style="font-size:0.78rem; color:#7ab8e8"><span class="spinner"></span> Localizing to ${LANG_NAMES[lang] || lang.toUpperCase()}…</span>`;
+        } else {
+          text += chunk;
+        }
         scriptEl.value = text;
         scriptEl.scrollTop = scriptEl.scrollHeight;
       }

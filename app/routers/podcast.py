@@ -893,10 +893,14 @@ async def _run_synthesis_job(
                 translate_and_localize, text, params.language, settings.anthropic_api_key
             )
 
-        logger.info(f"Job {job_id}: synthesizing {len(text)} chars → {params.language}")
+        effective_voice = params.voice_id or None
+        logger.info(
+            f"Job {job_id}: synthesizing {len(text)} chars → lang={params.language} "
+            f"voice_id={effective_voice!r} (param received: {params.voice_id!r})"
+        )
         audio = await asyncio.to_thread(
             _build_podcast,
-            text, params.language, params.voice_id or None,
+            text, params.language, effective_voice,
             params.include_intro, params.include_outro,
             params.speed, params.stability, params.similarity_boost,
             params.style, params.use_speaker_boost,

@@ -348,6 +348,17 @@
     if (el && val) el.addEventListener('input', () => { val.textContent = parseFloat(el.value).toFixed(2); });
   });
 
+  // ── Voice dropdown persistence ──
+  document.getElementById('synth-voice').addEventListener('change', function () {
+    const voiceId = this.value;
+    // Save globally so the preference survives new sessions
+    saveGlobalVoicePref(voiceId);
+    // Also save per-session if we're currently in one
+    if (currentSession) {
+      saveSessionVoicePref(currentSession.session_id, voiceId);
+    }
+  });
+
   // ── Language config ──
   const LANG_NAMES = { en: 'EN', pl: 'PL', es: 'ES', de: 'DE', fr: 'FR', it: 'IT', pt: 'PT', ja: 'JA', zh: 'ZH' };
   const LANG_FULL  = { en: 'English', pl: 'Polish', es: 'Spanish', de: 'German', fr: 'French', it: 'Italian', pt: 'Portuguese', ja: 'Japanese', zh: 'Chinese' };
@@ -355,6 +366,8 @@
 
   // ── Session persistence ──
   const SESSIONS_KEY = 'spodkast_sessions';
+  const VOICE_PREF_KEY = 'spodkast_voice_pref';
+
   function loadSavedSessions() {
     try { return JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]'); } catch { return []; }
   }
@@ -364,8 +377,38 @@
     const entry = { ...data, saved_at: existing?.saved_at ?? new Date().toISOString() };
     if (existing?.episode_texts) entry.episode_texts = existing.episode_texts;
     if (existing?.title)         entry.title = existing.title;
+    if (existing?.voice_id !== undefined) entry.voice_id = existing.voice_id;
     all.unshift(entry);
     localStorage.setItem(SESSIONS_KEY, JSON.stringify(all));
+  }
+
+  // ── Voice preference helpers ──
+  // Global preference persists across sessions; per-session preference overrides it.
+  function loadGlobalVoicePref() {
+    return localStorage.getItem(VOICE_PREF_KEY) ?? '';
+  }
+  function saveGlobalVoicePref(voiceId) {
+    localStorage.setItem(VOICE_PREF_KEY, voiceId);
+  }
+  function loadSessionVoicePref(session_id) {
+    const s = loadSavedSessions().find(s => s.session_id === session_id);
+    return s?.voice_id ?? null;
+  }
+  function saveSessionVoicePref(session_id, voiceId) {
+    const all = loadSavedSessions().map(s =>
+      s.session_id === session_id ? { ...s, voice_id: voiceId } : s
+    );
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(all));
+  }
+  // Apply the correct voice to the dropdown, preferring session-level, then global, then default.
+  function applyVoicePref(session_id) {
+    const voiceEl = document.getElementById('synth-voice');
+    if (!voiceEl) return;
+    const sessionPref = session_id ? loadSessionVoicePref(session_id) : null;
+    const voiceId = sessionPref !== null ? sessionPref : loadGlobalVoicePref();
+    voiceEl.value = voiceId;
+    // Fallback: if the saved value isn't a valid option, reset to default
+    if (voiceEl.value !== voiceId) voiceEl.value = '';
   }
 
   // episode_texts structure: { [episode_index]: { en: "...", pl: "...", ... } }
@@ -689,6 +732,8 @@
     document.getElementById('synth-settings').style.display = 'none';
     document.getElementById('lang-bar').style.display = 'none';
     setReviewStatus('', '');
+    // Apply global voice preference (no session yet — session ID available after scripts return)
+    applyVoicePref(null);
   }
 
   function populateConspect(data) {
@@ -737,6 +782,8 @@
       `${total} episode${total !== 1 ? 's' : ''} ready`;
     document.getElementById('generate-all-row').style.display = 'flex';
     document.getElementById('synth-settings').style.display = 'block';
+    // Apply voice preference now that the settings panel is visible
+    applyVoicePref(session_id);
     updateLangBar();
     setReviewStatus('', '');
   }
@@ -1030,6 +1077,8 @@
 
     document.getElementById('synth-settings').style.display = 'block';
     document.getElementById('generate-all-row').style.display = 'flex';
+    // Restore saved voice preference for this session
+    applyVoicePref(data.session_id);
     updateLangBar();
 
     if (missingExpansion.length > 0) {
@@ -1131,6 +1180,9 @@
       const saved = loadSavedSessions().find(s => s.session_id === id);
       if (saved) { currentSession = saved; showReview(saved); }
       else history.replaceState({}, '', '/');
+    } else {
+      // Preload global voice preference so it's ready if the user starts a new session
+      applyVoicePref(null);
     }
   });
 

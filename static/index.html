@@ -4,315 +4,866 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Spodkast</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg:           #09090b;
+      --surface:      #111113;
+      --surface-2:    #18181b;
+      --surface-3:    #1e1e24;
+      --border:       #27272a;
+      --border-2:     #3f3f46;
+      --text:         #fafafa;
+      --text-2:       #a1a1aa;
+      --text-3:       #71717a;
+      --text-4:       #52525b;
+
+      --accent:       #22c55e;
+      --accent-dim:   #166534;
+      --accent-bg:    #052e16;
+      --accent-hover: #16a34a;
+      --accent-muted: #14532d;
+
+      --blue:         #60a5fa;
+      --blue-dim:     #1d4ed8;
+      --blue-bg:      #0c1a3a;
+
+      --amber:        #fbbf24;
+      --amber-bg:     #1c1400;
+
+      --red:          #f87171;
+      --red-bg:       #1a0a0a;
+      --red-dim:      #450a0a;
+
+      --radius-sm:    6px;
+      --radius:       10px;
+      --radius-lg:    14px;
+      --radius-xl:    18px;
+
+      --shadow-sm:    0 1px 3px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.3);
+      --shadow:       0 4px 16px rgba(0,0,0,.5), 0 2px 4px rgba(0,0,0,.3);
+      --shadow-lg:    0 10px 40px rgba(0,0,0,.6), 0 4px 8px rgba(0,0,0,.4);
+
+      --transition:   150ms cubic-bezier(0.4,0,0.2,1);
+    }
+
+    html { height: 100%; }
+
     body {
-      font-family: system-ui, sans-serif;
-      background: #0f0f0f;
-      color: #e8e8e8;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 2rem;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem 3rem;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .card {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      border-radius: 12px;
-      padding: 2rem;
+    /* ── App wrapper ── */
+    .app {
       width: 100%;
-      max-width: 760px;
+      max-width: 800px;
     }
 
-    h1 { font-size: 1.4rem; font-weight: 600; color: #fff; }
-    h2 { font-size: 1rem; font-weight: 600; color: #fff; }
+    /* ── Top nav bar ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 0 1.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2rem;
+    }
 
-    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-    .session-badge { font-size: 0.75rem; color: #555; font-family: monospace; }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
 
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent), #16a34a);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      box-shadow: 0 0 16px rgba(34,197,94,.2);
+    }
+
+    .logo-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .session-badge {
+      font-size: 0.72rem;
+      color: var(--text-4);
+      font-family: 'Courier New', monospace;
+      background: var(--surface-2);
+      padding: 0.25rem 0.6rem;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 1.75rem;
+      box-shadow: var(--shadow);
+    }
+
+    /* ── Typography ── */
+    h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+    h2 { font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-4);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+
+    /* ── Session title input ── */
     .session-title-input {
-      width: 100%; background: transparent; border: none; border-bottom: 1px solid #2a2a2a;
-      color: #ccc; font-size: 1rem; font-weight: 500; padding: 0.2rem 0; outline: none;
-      transition: border-color 0.15s; margin-bottom: 1rem;
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-2);
+      font-size: 0.95rem;
+      font-weight: 500;
+      font-family: inherit;
+      padding: 0.25rem 0;
+      outline: none;
+      transition: border-color var(--transition), color var(--transition);
+      margin-bottom: 1.25rem;
     }
-    .session-title-input:focus { border-bottom-color: #555; color: #fff; }
-    .session-title-input::placeholder { color: #444; font-weight: 400; }
+    .session-title-input:focus { border-bottom-color: var(--accent); color: var(--text); }
+    .session-title-input::placeholder { color: var(--text-4); font-weight: 400; }
 
-    /* Tabs */
-    .tabs { display: flex; gap: 4px; background: #111; border-radius: 8px; padding: 4px; margin-bottom: 1.5rem; }
-    .tab { flex: 1; padding: 0.5rem; border: none; background: transparent; color: #888; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: background 0.15s, color 0.15s; }
-    .tab.active { background: #2a2a2a; color: #fff; }
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--surface-3);
+      border-radius: var(--radius);
+      padding: 3px;
+      margin-bottom: 1.25rem;
+      border: 1px solid var(--border);
+    }
+    .tab {
+      flex: 1;
+      padding: 0.5rem 0.75rem;
+      border: none;
+      background: transparent;
+      color: var(--text-3);
+      border-radius: calc(var(--radius) - 2px);
+      cursor: pointer;
+      font-size: 0.83rem;
+      font-weight: 500;
+      font-family: inherit;
+      transition: background var(--transition), color var(--transition);
+      white-space: nowrap;
+    }
+    .tab.active {
+      background: var(--surface-2);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+    .tab:hover:not(.active) { color: var(--text-2); background: rgba(255,255,255,.04); }
+
     .panel { display: none; }
     .panel.active { display: block; }
 
-    label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 0.4rem; }
+    /* ── Form elements ── */
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-3);
+      margin-bottom: 0.45rem;
+    }
+
     textarea, input[type="text"], select {
-      width: 100%; background: #111; border: 1px solid #2a2a2a; border-radius: 8px;
-      color: #e8e8e8; padding: 0.7rem 0.9rem; font-size: 0.9rem; outline: none;
-      transition: border-color 0.15s; font-family: inherit;
+      width: 100%;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
     }
-    textarea:focus, input[type="text"]:focus, select:focus { border-color: #555; }
-    textarea { resize: vertical; min-height: 160px; }
+    textarea:focus, input[type="text"]:focus, select:focus {
+      border-color: var(--accent-dim);
+      box-shadow: 0 0 0 3px rgba(34,197,94,.1);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 160px;
+      line-height: 1.6;
+    }
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2371717a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.9rem center;
+      padding-right: 2.5rem;
+    }
 
+    /* ── Drop zone ── */
     .drop-zone {
-      border: 2px dashed #2a2a2a; border-radius: 8px; padding: 2.5rem;
-      text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s;
-      color: #666; font-size: 0.9rem;
+      border: 2px dashed var(--border-2);
+      border-radius: var(--radius-lg);
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+      color: var(--text-3);
+      font-size: 0.9rem;
+      background: var(--surface-3);
     }
-    .drop-zone.hover, .drop-zone:hover { border-color: #555; background: #1f1f1f; }
-    .drop-zone.has-file { border-color: #4a7c59; color: #7ec99a; }
+    .drop-zone:hover, .drop-zone.hover {
+      border-color: var(--accent-dim);
+      background: rgba(34,197,94,.04);
+      color: var(--text-2);
+    }
+    .drop-zone.has-file {
+      border-color: var(--accent-dim);
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
     .drop-zone input[type="file"] { display: none; }
+    .drop-zone-icon { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
 
-    .options { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.2rem; }
-    .options .full { grid-column: 1 / -1; }
-    .checkbox-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #aaa; cursor: pointer; }
-    .checkbox-row input[type="checkbox"] { accent-color: #7ec99a; cursor: pointer; }
-
-    /* Buttons */
-    .btn {
-      padding: 0.7rem 1.2rem; border: none; border-radius: 8px; font-size: 0.9rem;
-      font-weight: 500; cursor: pointer; transition: background 0.15s, opacity 0.15s;
-      text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;
+    /* ── Options grid ── */
+    .options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1.25rem;
     }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-primary   { background: #2e5c3e; color: #fff; justify-content: center; }
-    .btn-primary:hover:not(:disabled)   { background: #3a7050; }
-    .btn-secondary { background: #222; color: #bbb; border: 1px solid #333; }
-    .btn-secondary:hover:not(:disabled) { background: #2a2a2a; }
-    .btn-danger    { background: #3a1a1a; color: #e87a7a; border: 1px solid #5a2a2a; }
-    .btn-danger:hover:not(:disabled)    { background: #4a2020; }
-    .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 6px; }
-    .btn-generate  { background: #1e3a28; color: #7ec99a; border: 1px solid #2e5c3e; font-size: 0.8rem; padding: 0.35rem 0.75rem; border-radius: 6px; }
-    .btn-generate:hover:not(:disabled)  { background: #254d33; }
-    .btn-download  { background: #1a3a2a; color: #7ec99a; border: 1px solid #2e5c3e; font-size: 0.8rem; padding: 0.35rem 0.75rem; border-radius: 6px; text-decoration: none; }
-    .btn-retry     { background: #2a1a1a; color: #e87a7a; border: 1px solid #5a2a2a; font-size: 0.8rem; padding: 0.35rem 0.75rem; border-radius: 6px; }
-    .btn-retry:hover:not(:disabled)     { background: #3a2020; }
-    .btn-translate { background: #1a2a3a; color: #7ab8e8; border: 1px solid #2a4a6a; font-size: 0.8rem; padding: 0.35rem 0.75rem; border-radius: 6px; }
-    .btn-translate:hover:not(:disabled) { background: #223344; }
+    .options .full { grid-column: 1 / -1; }
 
-    /* Status */
-    .status { padding: 0.8rem 1rem; border-radius: 8px; font-size: 0.85rem; display: none; }
-    .status.info  { background: #1a2a3a; color: #7ab8e8; display: block; }
-    .status.error { background: #2a1a1a; color: #e87a7a; display: block; }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-2);
+      cursor: pointer;
+      user-select: none;
+    }
+    .checkbox-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 0.65rem 1.1rem;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background var(--transition), opacity var(--transition), box-shadow var(--transition), transform var(--transition);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+    .btn:not(:disabled):active { transform: translateY(1px); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      font-weight: 600;
+      box-shadow: 0 0 0 1px rgba(34,197,94,.3), 0 2px 8px rgba(34,197,94,.2);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      box-shadow: 0 0 0 1px rgba(34,197,94,.4), 0 4px 16px rgba(34,197,94,.25);
+    }
+
+    .btn-secondary {
+      background: var(--surface-2);
+      color: var(--text-2);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--surface-3);
+      border-color: var(--border-2);
+      color: var(--text);
+    }
+
+    .btn-danger {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid var(--red-dim);
+    }
+    .btn-danger:hover:not(:disabled) { background: #2a1010; }
+
+    .btn-sm {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+      border-radius: var(--radius-sm);
+    }
+
+    .btn-generate {
+      background: var(--accent-bg);
+      color: var(--accent);
+      border: 1px solid var(--accent-muted);
+      font-size: 0.82rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-sm);
+    }
+    .btn-generate:hover:not(:disabled) {
+      background: #0a3d1c;
+      border-color: var(--accent-dim);
+    }
+
+    .btn-download {
+      background: var(--accent-bg);
+      color: var(--accent);
+      border: 1px solid var(--accent-muted);
+      font-size: 0.82rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+    }
+    .btn-download:hover:not(:disabled) { background: #0a3d1c; border-color: var(--accent-dim); }
+
+    .btn-retry {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid var(--red-dim);
+      font-size: 0.82rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-sm);
+    }
+    .btn-retry:hover:not(:disabled) { background: #2a1010; }
+
+    .btn-translate {
+      background: var(--blue-bg);
+      color: var(--blue);
+      border: 1px solid var(--blue-dim);
+      font-size: 0.82rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-sm);
+    }
+    .btn-translate:hover:not(:disabled) { background: #0f2550; }
+
+    /* ── Status messages ── */
+    .status {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius);
+      font-size: 0.85rem;
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .status.info {
+      background: var(--blue-bg);
+      color: var(--blue);
+      border: 1px solid rgba(96,165,250,.2);
+      display: block;
+    }
+    .status.error {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid rgba(248,113,113,.2);
+      display: block;
+    }
 
     .operator-msg {
-      padding: 0.8rem 1rem; background: #2a2a1a; border-left: 3px solid #c9a84c;
-      border-radius: 0 8px 8px 0; font-size: 0.82rem; color: #c9a84c; margin-bottom: 1rem;
-    }
-
-    /* Language bar */
-    .lang-bar { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
-    .lang-pill {
-      padding: 0.3rem 0.8rem; border: 1px solid #333; border-radius: 20px;
-      font-size: 0.78rem; background: #111; color: #777; cursor: pointer;
-      transition: all 0.15s; white-space: nowrap;
-    }
-    .lang-pill.active { background: #1e3a28; color: #7ec99a; border-color: #2e5c3e; }
-    .lang-pill:hover:not(.active):not(.lang-add) { border-color: #555; color: #ccc; }
-    .lang-pill.lang-add { color: #555; border-style: dashed; }
-    .lang-pill.lang-add:hover { color: #888; border-color: #555; }
-    .lang-add-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-
-    /* Synthesis settings */
-    .synth-settings {
-      background: #111; border: 1px solid #222; border-radius: 8px; padding: 1rem;
+      display: flex;
+      gap: 0.6rem;
+      padding: 0.75rem 1rem;
+      background: var(--amber-bg);
+      border: 1px solid rgba(251,191,36,.15);
+      border-left: 3px solid var(--amber);
+      border-radius: var(--radius);
+      font-size: 0.83rem;
+      color: var(--amber);
       margin-bottom: 1rem;
     }
-    .synth-section-title { font-size: 0.72rem; color: #555; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.6rem; }
+
+    /* ── Language bar ── */
+    .lang-bar {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .lang-pill {
+      padding: 0.3rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: var(--surface-3);
+      color: var(--text-3);
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+    .lang-pill.active {
+      background: var(--accent-bg);
+      color: var(--accent);
+      border-color: var(--accent-muted);
+    }
+    .lang-pill:hover:not(.active):not(.lang-add) {
+      border-color: var(--border-2);
+      color: var(--text-2);
+      background: var(--surface-2);
+    }
+    .lang-pill.lang-add {
+      color: var(--text-4);
+      border-style: dashed;
+    }
+    .lang-pill.lang-add:hover { color: var(--text-3); border-color: var(--border-2); }
+    .lang-add-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* ── Synth settings ── */
+    .synth-settings {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 1.25rem;
+    }
     .synth-settings .options { margin-top: 0; }
 
-    /* Range sliders */
+    /* ── Sliders ── */
     .voice-controls { margin-top: 0.75rem; }
-    .slider-grid { display: grid; grid-template-columns: 90px 1fr 38px; gap: 0.4rem 0.75rem; align-items: center; }
-    .slider-label { font-size: 0.78rem; color: #777; }
-    input[type="range"] { width: 100%; accent-color: #7ec99a; cursor: pointer; }
-    .slider-val { font-size: 0.75rem; color: #7ec99a; font-family: monospace; text-align: right; }
-
-    /* History */
-    .history-item {
-      display: flex; align-items: center; justify-content: space-between;
-      background: #111; border: 1px solid #222; border-radius: 6px; padding: 0.5rem 0.8rem;
-      font-size: 0.8rem; cursor: pointer; transition: border-color 0.15s;
+    .slider-grid {
+      display: grid;
+      grid-template-columns: 90px 1fr 44px;
+      gap: 0.35rem 0.75rem;
+      align-items: center;
     }
-    .history-item:hover { border-color: #444; }
-    .history-item .hi-id { color: #7ab8e8; font-family: monospace; }
-    .history-item .hi-meta { color: #555; }
+    .slider-label { font-size: 0.78rem; color: var(--text-3); }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+      height: 4px;
+    }
+    .slider-val {
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-family: 'Courier New', monospace;
+      text-align: right;
+      background: var(--accent-bg);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+    }
 
-    /* Review */
+    /* ── History ── */
+    .history-section { margin-top: 1.75rem; }
+    .history-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .history-list { display: flex; flex-direction: column; gap: 0.4rem; }
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.65rem 0.9rem;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+      gap: 0.5rem;
+    }
+    .history-item:hover { border-color: var(--border-2); background: var(--surface-3); }
+    .history-item .hi-id { color: var(--blue); font-family: monospace; }
+    .history-item .hi-meta { color: var(--text-4); font-size: 0.75rem; }
+
+    /* ── Review section ── */
     #review { display: none; }
-    .review-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+
+    .review-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
     .review-toolbar h2 { flex: 1; }
 
+    /* ── Episode cards ── */
     .episode-list { display: flex; flex-direction: column; gap: 0.75rem; }
-    .episode-card { background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 1rem; }
-    .episode-card.loading { border-color: #1e3a28; }
-    .episode-card.error-state { border-color: #5a2a2a; }
 
-    .episode-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.5rem; gap: 0.5rem; }
-    .episode-title  { font-weight: 600; font-size: 0.9rem; color: #fff; }
-    .episode-meta   { font-size: 0.75rem; color: #555; white-space: nowrap; }
-    .episode-summary { font-size: 0.78rem; color: #555; font-style: italic; margin-bottom: 0.6rem; }
+    .episode-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.1rem 1.25rem;
+      transition: border-color var(--transition);
+    }
+    .episode-card.loading { border-color: var(--accent-muted); }
+    .episode-card.error-state { border-color: var(--red-dim); }
+
+    .episode-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 0.4rem;
+      gap: 0.75rem;
+    }
+    .episode-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .episode-meta {
+      font-size: 0.73rem;
+      color: var(--text-4);
+      white-space: nowrap;
+      background: var(--surface-3);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .episode-summary {
+      font-size: 0.8rem;
+      color: var(--text-3);
+      font-style: italic;
+      margin-bottom: 0.75rem;
+      line-height: 1.5;
+    }
 
     .script-area {
-      width: 100%; background: #0d0d0d; border: 1px solid #222; border-radius: 6px;
-      color: #bbb; padding: 0.7rem; font-size: 0.82rem; font-family: inherit;
-      line-height: 1.6; resize: vertical; min-height: 7em; max-height: 60vh;
-      overflow-y: auto; transition: border-color 0.15s; margin-bottom: 0.75rem; display: none;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-2);
+      padding: 0.8rem 1rem;
+      font-size: 0.83rem;
+      font-family: inherit;
+      line-height: 1.65;
+      resize: vertical;
+      min-height: 7em;
+      max-height: 60vh;
+      overflow-y: auto;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      margin-bottom: 0.75rem;
+      display: none;
     }
-    .script-area.streaming { min-height: 7em; color: #9ab; border-color: #1e3a28; }
-    .script-area.expanded  { min-height: 20em; }
-    .script-area:focus { border-color: #555; }
+    .script-area.streaming {
+      min-height: 7em;
+      color: var(--blue);
+      border-color: rgba(96,165,250,.2);
+      background: var(--blue-bg);
+    }
+    .script-area.expanded { min-height: 20em; }
+    .script-area:focus {
+      border-color: var(--border-2);
+      box-shadow: 0 0 0 2px rgba(255,255,255,.04);
+      outline: none;
+    }
 
-    .episode-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-    .actions-left  { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; flex: 1; }
-    .actions-right { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .episode-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .actions-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+    .actions-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
 
-    .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #2e5c3e; border-top-color: #7ec99a; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    /* ── Spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      border: 2px solid rgba(34,197,94,.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      vertical-align: middle;
+      margin-right: 2px;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .generate-all-row { margin-top: 1.25rem; display: flex; gap: 0.75rem; align-items: center; }
-    .save-indicator { font-size: 0.72rem; color: #3a5a3a; display: none; }
-    .save-indicator.visible { display: inline; }
+    /* ── Generate all row ── */
+    .generate-all-row {
+      margin-top: 1.25rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
 
-    .job-badge { font-size: 0.72rem; color: #777; font-family: monospace; }
-    .job-badge.running { color: #7ab8e8; }
-    .job-badge.done    { color: #7ec99a; }
-    .job-badge.failed  { color: #e87a7a; }
+    /* ── Save indicator ── */
+    .save-indicator {
+      font-size: 0.72rem;
+      color: var(--accent-dim);
+      display: none;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .save-indicator.visible { display: inline-flex; }
 
-    /* ── Mobile responsiveness ── */
-    @media (max-width: 600px) {
-      body { padding: 0.75rem; }
-      .card { padding: 1rem; border-radius: 8px; }
+    /* ── Job badge ── */
+    .job-badge { font-size: 0.72rem; color: var(--text-4); font-family: monospace; }
+    .job-badge.running { color: var(--blue); }
+    .job-badge.done    { color: var(--accent); }
+    .job-badge.failed  { color: var(--red); }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1.25rem 0;
+    }
+
+    /* ── Generate scripts button container ── */
+    .submit-row {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 1.5rem;
+    }
+
+    /* ── Pulse animation for loading state ── */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+
+    /* ── Mobile ── */
+    @media (max-width: 640px) {
+      body { padding: 0 0 2rem; }
+      .app { max-width: 100%; }
+
+      .topbar {
+        padding: 1rem 1rem 1rem;
+        margin-bottom: 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .card {
+        padding: 1.25rem 1rem;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        border-bottom: 1px solid var(--border);
+        box-shadow: none;
+      }
+
       .options { grid-template-columns: 1fr; }
-      .slider-grid { grid-template-columns: 72px 1fr 34px; }
-      .synth-settings { padding: 0.75rem; }
-      .drop-zone { padding: 1.5rem; }
+      .slider-grid { grid-template-columns: 75px 1fr 40px; }
+      .synth-settings { padding: 0.9rem 1rem; }
+      .drop-zone { padding: 2rem 1.25rem; }
       .review-toolbar { gap: 0.5rem; }
       .episode-actions { gap: 0.4rem; }
       .lang-bar { gap: 0.3rem; }
-      h1 { font-size: 1.2rem; }
+      h1 { font-size: 1.15rem; }
       .generate-all-row { flex-direction: column; }
       .generate-all-row .btn { width: 100%; }
+      .submit-row .btn { flex: 1; }
+      .episode-card { padding: 1rem; border-radius: var(--radius); }
+      .history-item { padding: 0.6rem 0.75rem; }
+      .tabs { margin-bottom: 1rem; }
+    }
+
+    @media (max-width: 400px) {
+      body { padding: 0 0 2rem; }
+      .topbar { padding: 0.9rem 0.85rem 0.9rem; }
+      .card { padding: 1rem 0.85rem; }
     }
   </style>
 </head>
 <body>
-<div class="card">
+<div class="app">
 
-  <!-- ── Input ── -->
-  <div id="input-step">
-    <div class="header"><h1>Spodkast</h1></div>
-
-    <div class="tabs">
-      <button class="tab active" data-tab="text">Text</button>
-      <button class="tab" data-tab="url">URL</button>
-      <button class="tab" data-tab="file">File</button>
+  <!-- ── Top Bar ── -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-icon">🎙</div>
+      <span class="logo-text">Spodkast</span>
     </div>
-
-    <div class="panel active" id="panel-text">
-      <label for="text-input">Source material</label>
-      <textarea id="text-input" placeholder="Paste your article, notes, or any text here…"></textarea>
-    </div>
-    <div class="panel" id="panel-url">
-      <label for="url-input">URL</label>
-      <input type="text" id="url-input" placeholder="https://example.com/article">
-    </div>
-    <div class="panel" id="panel-file">
-      <div class="drop-zone" id="drop-zone">
-        <input type="file" id="file-input" accept=".txt,.md,.rst,.csv">
-        Drop a text file here, or <u>click to browse</u>
-      </div>
-    </div>
-
-    <div style="display:flex; gap:0.6rem; margin-top:1.5rem;">
-      <button class="btn btn-primary" id="submit-btn" style="flex:1">Generate scripts</button>
-    </div>
-    <div class="status" id="input-status"></div>
-
-    <div id="history-section" style="margin-top:1.5rem; display:none">
-      <div style="font-size:0.8rem; color:#555; margin-bottom:0.6rem;">Previous sessions</div>
-      <div id="history-list" style="display:flex; flex-direction:column; gap:0.4rem;"></div>
-    </div>
+    <span class="session-badge" id="session-badge" style="display:none"></span>
   </div>
 
-  <!-- ── Review ── -->
-  <div id="review">
-    <div class="header">
-      <h1>Spodkast</h1>
-      <span class="session-badge" id="session-badge"></span>
-    </div>
-    <input class="session-title-input" id="session-title" placeholder="Untitled session" autocomplete="off">
+  <!-- ── Main card ── -->
+  <div class="card">
 
-    <div id="operator-msg-box" class="operator-msg" style="display:none"></div>
+    <!-- ── Input step ── -->
+    <div id="input-step">
 
-    <div class="review-toolbar">
-      <h2 id="episodes-heading">Generating episode plan…</h2>
-      <button class="btn btn-danger btn-sm" id="cancel-expand-btn" style="display:none">Cancel</button>
-      <button class="btn btn-secondary btn-sm" id="new-session-btn">← New</button>
-    </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="text">Text</button>
+        <button class="tab" data-tab="url">URL</button>
+        <button class="tab" data-tab="file">File</button>
+      </div>
 
-    <!-- Language bar -->
-    <div class="lang-bar" id="lang-bar" style="display:none"></div>
-
-    <!-- Synthesis settings -->
-    <div class="synth-settings" id="synth-settings" style="display:none">
-      <div class="synth-section-title">Voice</div>
-      <div class="options" style="margin-top:0">
-        <div>
-          <label for="synth-voice">Voice</label>
-          <select id="synth-voice">
-            <option value="piTKgcLEGmPE4e6mEKli">Nicole — whisper / ASMR</option>
-            <option value="oWAxZDx7w5VEj9dCyTzz">Grace — calm, gentle</option>
-            <option value="XrExE9yKIg1WjnnlVkGX">Matilda — warm, soft</option>
-            <option value="pMsXgVXv3BLzUgSXRplE">Serena — serene, steady</option>
-            <option value="LcfcDJNUP1GQjkzn1xUU">Emily — soft, clear</option>
-            <option value="ThT5KcBeYPX3keUQqHPh">Dorothy — warm storyteller</option>
-            <option value="EXAVITQu4vr4xnSDxMaL">Sarah — gentle, expressive</option>
-          </select>
-        </div>
-        <div class="full" style="display:flex; gap:1.5rem; align-items:center; padding-top:0.3rem;">
-          <label class="checkbox-row"><input type="checkbox" id="synth-intro"> Include intro</label>
-          <label class="checkbox-row"><input type="checkbox" id="synth-outro"> Include outro</label>
+      <div class="panel active" id="panel-text">
+        <label for="text-input">Source material</label>
+        <textarea id="text-input" placeholder="Paste your article, notes, or any text here…"></textarea>
+      </div>
+      <div class="panel" id="panel-url">
+        <label for="url-input">Article URL</label>
+        <input type="text" id="url-input" placeholder="https://example.com/article">
+      </div>
+      <div class="panel" id="panel-file">
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="file-input" accept=".txt,.md,.rst,.csv">
+          <span class="drop-zone-icon">📄</span>
+          Drop a text file here, or <u>click to browse</u>
         </div>
       </div>
 
-      <div class="voice-controls">
-        <div class="synth-section-title" style="margin-top:0.75rem;">Voice controls</div>
-        <div class="slider-grid">
-          <span class="slider-label">Speed</span>
-          <input type="range" id="synth-speed" min="0.7" max="1.3" step="0.05" value="1.0">
-          <span class="slider-val" id="synth-speed-val">1.00</span>
+      <div class="submit-row">
+        <button class="btn btn-primary" id="submit-btn" style="flex:1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Generate scripts
+        </button>
+      </div>
+      <div class="status" id="input-status"></div>
 
-          <span class="slider-label">Stability</span>
-          <input type="range" id="synth-stability" min="0" max="1" step="0.05" value="0.80">
-          <span class="slider-val" id="synth-stability-val">0.80</span>
-
-          <span class="slider-label">Similarity</span>
-          <input type="range" id="synth-similarity" min="0" max="1" step="0.05" value="0.75">
-          <span class="slider-val" id="synth-similarity-val">0.75</span>
-
-          <span class="slider-label">Style</span>
-          <input type="range" id="synth-style" min="0" max="1" step="0.05" value="0.10">
-          <span class="slider-val" id="synth-style-val">0.10</span>
+      <div id="history-section" class="history-section" style="display:none">
+        <div class="history-header">
+          <div class="section-label">Recent sessions</div>
         </div>
-        <label class="checkbox-row" style="margin-top:0.6rem;">
-          <input type="checkbox" id="synth-speaker-boost"> Speaker boost
-        </label>
+        <div id="history-list" class="history-list"></div>
       </div>
     </div>
 
-    <div class="episode-list" id="episode-list"></div>
+    <!-- ── Review step ── -->
+    <div id="review">
+      <input class="session-title-input" id="session-title" placeholder="Untitled session" autocomplete="off">
 
-    <div class="generate-all-row" id="generate-all-row" style="display:none">
-      <button class="btn btn-primary" id="generate-all-btn" style="flex:1; margin-top:0">Generate all episodes</button>
+      <div id="operator-msg-box" class="operator-msg" style="display:none"></div>
+
+      <div class="review-toolbar">
+        <h2 id="episodes-heading">Generating episode plan…</h2>
+        <button class="btn btn-danger btn-sm" id="cancel-expand-btn" style="display:none">
+          ✕ Cancel
+        </button>
+        <button class="btn btn-secondary btn-sm" id="new-session-btn">← New</button>
+      </div>
+
+      <!-- Language bar -->
+      <div class="lang-bar" id="lang-bar" style="display:none"></div>
+
+      <!-- Synthesis settings -->
+      <div class="synth-settings" id="synth-settings" style="display:none">
+        <div class="section-label">Voice</div>
+        <div class="options" style="margin-top:0">
+          <div>
+            <label for="synth-voice">Voice preset</label>
+            <select id="synth-voice">
+              <option value="piTKgcLEGmPE4e6mEKli">Nicole — whisper / ASMR</option>
+              <option value="oWAxZDx7w5VEj9dCyTzz">Grace — calm, gentle</option>
+              <option value="XrExE9yKIg1WjnnlVkGX">Matilda — warm, soft</option>
+              <option value="pMsXgVXv3BLzUgSXRplE">Serena — serene, steady</option>
+              <option value="LcfcDJNUP1GQjkzn1xUU">Emily — soft, clear</option>
+              <option value="ThT5KcBeYPX3keUQqHPh">Dorothy — warm storyteller</option>
+              <option value="EXAVITQu4vr4xnSDxMaL">Sarah — gentle, expressive</option>
+            </select>
+          </div>
+          <div class="full" style="display:flex; gap:1.5rem; align-items:center; padding-top:0.25rem;">
+            <label class="checkbox-row"><input type="checkbox" id="synth-intro"> Include intro</label>
+            <label class="checkbox-row"><input type="checkbox" id="synth-outro"> Include outro</label>
+          </div>
+        </div>
+
+        <div class="voice-controls">
+          <div class="section-label" style="margin-top:0.9rem; margin-bottom:0.5rem;">Voice controls</div>
+          <div class="slider-grid">
+            <span class="slider-label">Speed</span>
+            <input type="range" id="synth-speed" min="0.7" max="1.3" step="0.05" value="1.0">
+            <span class="slider-val" id="synth-speed-val">1.00</span>
+
+            <span class="slider-label">Stability</span>
+            <input type="range" id="synth-stability" min="0" max="1" step="0.05" value="0.80">
+            <span class="slider-val" id="synth-stability-val">0.80</span>
+
+            <span class="slider-label">Similarity</span>
+            <input type="range" id="synth-similarity" min="0" max="1" step="0.05" value="0.75">
+            <span class="slider-val" id="synth-similarity-val">0.75</span>
+
+            <span class="slider-label">Style</span>
+            <input type="range" id="synth-style" min="0" max="1" step="0.05" value="0.10">
+            <span class="slider-val" id="synth-style-val">0.10</span>
+          </div>
+          <label class="checkbox-row" style="margin-top:0.65rem;">
+            <input type="checkbox" id="synth-speaker-boost"> Speaker boost
+          </label>
+        </div>
+      </div>
+
+      <div class="episode-list" id="episode-list"></div>
+
+      <div class="generate-all-row" id="generate-all-row" style="display:none">
+        <button class="btn btn-primary" id="generate-all-btn" style="flex:1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Generate all episodes
+        </button>
+      </div>
+
+      <div class="status" id="review-status"></div>
     </div>
 
-    <div class="status" id="review-status" style="margin-top:1rem"></div>
-  </div>
-</div>
+  </div><!-- /card -->
+</div><!-- /app -->
 
 <script>
   // ── Tabs ──
@@ -337,7 +888,9 @@
   function setFile(f) {
     selectedFile = f;
     dropZone.classList.toggle('has-file', !!f);
-    dropZone.textContent = f ? `✓ ${f.name}` : 'Drop a text file here, or click to browse';
+    dropZone.innerHTML = f
+      ? `<span class="drop-zone-icon">✅</span>${escHtml(f.name)}`
+      : `<span class="drop-zone-icon">📄</span>Drop a text file here, or <u>click to browse</u>`;
   }
 
   // ── Slider values ──
@@ -350,9 +903,7 @@
   // ── Voice dropdown persistence ──
   document.getElementById('synth-voice').addEventListener('change', function () {
     const voiceId = this.value;
-    // Save globally so the preference survives new sessions
     saveGlobalVoicePref(voiceId);
-    // Also save per-session if we're currently in one
     if (currentSession) {
       saveSessionVoicePref(currentSession.session_id, voiceId);
     }
@@ -364,7 +915,6 @@
   const TRANSLATABLE_LANGS = ['pl', 'es', 'de', 'fr', 'it', 'pt', 'ja', 'zh'];
 
   // ── Server voice configuration ──
-  // Loaded from /podcast/languages on startup so we always know the real configured default.
   let _serverVoiceMap = { en: 'piTKgcLEGmPE4e6mEKli', pl: 'piTKgcLEGmPE4e6mEKli', es: 'piTKgcLEGmPE4e6mEKli' };
   async function loadServerVoiceConfig() {
     try {
@@ -373,29 +923,24 @@
       const data = await resp.json();
       if (data.voice_map) {
         _serverVoiceMap = data.voice_map;
-        // Update the dropdown to annotate which voice is the server default
         const voiceEl = document.getElementById('synth-voice');
         if (voiceEl) {
           for (const opt of voiceEl.options) {
-            // Strip any previous "(server default)" annotation
             opt.textContent = opt.textContent.replace(/\s*\(server default\)$/, '');
             if (opt.value === _serverVoiceMap['en']) {
               opt.textContent += ' (server default)';
             }
           }
-          // If current selection is not a valid option, select the server default
           if (!voiceEl.value) {
             voiceEl.value = _serverVoiceMap['en'] || '';
           }
         }
       }
-    } catch (e) {
-      // Non-fatal: fall back to hardcoded default
-    }
+    } catch (e) { /* Non-fatal */ }
   }
 
   // ── Session persistence ──
-  const SESSIONS_KEY = 'spodkast_sessions';
+  const SESSIONS_KEY  = 'spodkast_sessions';
   const VOICE_PREF_KEY = 'spodkast_voice_pref';
 
   function loadSavedSessions() {
@@ -413,13 +958,8 @@
   }
 
   // ── Voice preference helpers ──
-  // Global preference persists across sessions; per-session preference overrides it.
-  function loadGlobalVoicePref() {
-    return localStorage.getItem(VOICE_PREF_KEY) ?? '';
-  }
-  function saveGlobalVoicePref(voiceId) {
-    localStorage.setItem(VOICE_PREF_KEY, voiceId);
-  }
+  function loadGlobalVoicePref() { return localStorage.getItem(VOICE_PREF_KEY) ?? ''; }
+  function saveGlobalVoicePref(voiceId) { localStorage.setItem(VOICE_PREF_KEY, voiceId); }
   function loadSessionVoicePref(session_id) {
     const s = loadSavedSessions().find(s => s.session_id === session_id);
     return s?.voice_id ?? null;
@@ -430,20 +970,16 @@
     );
     localStorage.setItem(SESSIONS_KEY, JSON.stringify(all));
   }
-  // Apply the correct voice to the dropdown, preferring session-level, then global, then server default.
   function applyVoicePref(session_id) {
     const voiceEl = document.getElementById('synth-voice');
     if (!voiceEl) return;
     const sessionPref = session_id ? loadSessionVoicePref(session_id) : null;
     const savedPref = sessionPref !== null ? sessionPref : loadGlobalVoicePref();
-    // Use saved preference if non-empty; otherwise fall back to server-configured default voice
     const voiceId = savedPref || _serverVoiceMap[_activeLanguage] || _serverVoiceMap['en'] || '';
     voiceEl.value = voiceId;
-    // If the saved ID isn't a valid option in the list, fall back to server default
     if (voiceEl.value !== voiceId) {
       const serverDefault = _serverVoiceMap[_activeLanguage] || _serverVoiceMap['en'] || '';
       voiceEl.value = serverDefault;
-      // If server default isn't in the list either, select first available option
       if (!voiceEl.value && voiceEl.options.length > 0) {
         voiceEl.value = voiceEl.options[0].value;
       }
@@ -451,13 +987,12 @@
   }
 
   // episode_texts structure: { [episode_index]: { en: "...", pl: "...", ... } }
-  // Migration: old format was { [episode_index]: "string" } → treated as { en: "string" }
   function getEpisodeTexts(session_id, index) {
     const s = loadSavedSessions().find(s => s.session_id === session_id);
     if (!s?.episode_texts) return {};
     const val = s.episode_texts[index];
     if (!val) return {};
-    if (typeof val === 'string') return { en: val }; // legacy
+    if (typeof val === 'string') return { en: val };
     return val;
   }
   function getEpisodeTextLang(session_id, index, lang) {
@@ -477,7 +1012,6 @@
     });
     localStorage.setItem(SESSIONS_KEY, JSON.stringify(all));
   }
-  // Convenience wrappers for English (expansion)
   function saveEpisodeTextLocal(session_id, index, text) { saveEpisodeTextLang(session_id, index, 'en', text); }
   function loadEpisodeTextLocal(session_id, index) { return getEpisodeTextLang(session_id, index, 'en'); }
 
@@ -499,9 +1033,6 @@
 
   function getSynthesisParams(textOverride) {
     const voiceEl = document.getElementById('synth-voice');
-    // Always send an explicit voice_id — never leave it undefined/empty.
-    // If the dropdown has no selection (empty value), use the server-configured default
-    // for the active language so the backend never silently falls back to a different voice.
     const rawVoiceId = voiceEl ? voiceEl.value : '';
     const voice_id = rawVoiceId || _serverVoiceMap[_activeLanguage] || _serverVoiceMap['en'] || undefined;
     const p = {
@@ -526,7 +1057,6 @@
     bar.style.display = 'flex';
     bar.innerHTML = '';
 
-    // Collect all languages with any data
     const allLangs = new Set(['en']);
     currentSession.episodes.forEach(ep => {
       Object.keys(getEpisodeTexts(currentSession.session_id, ep.index)).forEach(l => allLangs.add(l));
@@ -543,7 +1073,6 @@
       bar.appendChild(pill);
     });
 
-    // Add language button
     const addBtn = document.createElement('button');
     addBtn.className = 'lang-pill lang-add';
     addBtn.id = 'lang-add-btn';
@@ -553,14 +1082,12 @@
   }
 
   function showAddLanguageUI() {
-    const bar = document.getElementById('lang-bar');
     const addBtn = document.getElementById('lang-add-btn');
     if (!addBtn) return;
-
     const row = document.createElement('div');
     row.className = 'lang-add-row';
     row.innerHTML = `
-      <select id="lang-add-select" style="padding:0.3rem 0.6rem; font-size:0.8rem; width:auto;">
+      <select id="lang-add-select" style="padding:0.3rem 0.6rem; font-size:0.8rem; width:auto; border-radius:var(--radius-sm);">
         ${TRANSLATABLE_LANGS.map(l => `<option value="${l}">${LANG_FULL[l]}</option>`).join('')}
       </select>
       <button class="btn btn-translate btn-sm" id="lang-add-go">Translate all</button>
@@ -625,7 +1152,7 @@
       if (_expandCancelled) break;
       const enText = getEpisodeTextLang(currentSession.session_id, ep.index, 'en');
       if (!enText) continue;
-      if (getEpisodeTextLang(currentSession.session_id, ep.index, lang)) continue; // already done
+      if (getEpisodeTextLang(currentSession.session_id, ep.index, lang)) continue;
       await streamTranslate(currentSession.session_id, ep.index, lang, enText);
     }
 
@@ -634,13 +1161,10 @@
     setReviewStatus('', '');
   }
 
-  // ── Translate a single episode to a language ──
+  // ── Translate a single episode ──
   async function translateEpisodeTo(session_id, index, lang) {
     const enText = getEpisodeTextLang(session_id, index, 'en');
-    if (!enText) {
-      setReviewStatus('No English text available for this episode.', 'error');
-      return;
-    }
+    if (!enText) { setReviewStatus('No English text available for this episode.', 'error'); return; }
     await streamTranslate(session_id, index, lang, enText);
     updateLangBar();
   }
@@ -657,11 +1181,10 @@
     scriptEl.readOnly = true;
     if (actionsEl) {
       actionsEl.querySelector('.actions-left').innerHTML =
-        `<span style="font-size:0.78rem; color:#7ab8e8"><span class="spinner"></span> Translating to ${LANG_NAMES[lang] || lang.toUpperCase()}… (stage 1/2)</span>`;
+        `<span style="font-size:0.78rem; color:var(--blue)"><span class="spinner"></span> Translating to ${LANG_NAMES[lang] || lang.toUpperCase()}… (stage 1/2)</span>`;
     }
 
     let text = '';
-    let inStage2 = false;
     try {
       const resp = await fetch(`/podcast/sessions/${session_id}/episodes/${index}/translate`, {
         method: 'POST',
@@ -671,7 +1194,7 @@
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ detail: resp.statusText }));
         if (actionsEl) actionsEl.querySelector('.actions-left').innerHTML =
-          `<span style="color:#e87a7a; font-size:0.78rem">${escHtml(err.detail ?? resp.statusText)}</span>
+          `<span style="color:var(--red); font-size:0.78rem">${escHtml(err.detail ?? resp.statusText)}</span>
            <button class="btn btn-retry btn-sm" onclick="translateEpisodeTo('${session_id}', ${index}, '${lang}')">Retry</button>`;
         return;
       }
@@ -681,14 +1204,11 @@
         const { done, value } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
-        // NUL sentinel (\x00) signals the switch from Stage 1 (literal translation)
-        // to Stage 2 (idiomatic localization). Clear the textarea and start fresh.
         if (chunk.includes('\x00')) {
           const parts = chunk.split('\x00');
-          text = parts[parts.length - 1]; // discard Stage 1, start Stage 2
-          inStage2 = true;
+          text = parts[parts.length - 1];
           if (actionsEl) actionsEl.querySelector('.actions-left').innerHTML =
-            `<span style="font-size:0.78rem; color:#7ab8e8"><span class="spinner"></span> Localizing to ${LANG_NAMES[lang] || lang.toUpperCase()}…</span>`;
+            `<span style="font-size:0.78rem; color:var(--blue)"><span class="spinner"></span> Localizing to ${LANG_NAMES[lang] || lang.toUpperCase()}…</span>`;
         } else {
           text += chunk;
         }
@@ -704,7 +1224,7 @@
       wireEditAutoSave(session_id, index, lang, scriptEl);
     } catch (e) {
       if (actionsEl) actionsEl.querySelector('.actions-left').innerHTML =
-        `<span style="color:#e87a7a; font-size:0.78rem">${escHtml(e.message)}</span>
+        `<span style="color:var(--red); font-size:0.78rem">${escHtml(e.message)}</span>
          <button class="btn btn-retry btn-sm" onclick="translateEpisodeTo('${session_id}', ${index}, '${lang}')">Retry</button>`;
     }
   }
@@ -768,6 +1288,7 @@
     _activeLanguage = 'en';
     document.getElementById('input-step').style.display = 'none';
     document.getElementById('review').style.display = 'block';
+    document.getElementById('session-badge').style.display = 'none';
     document.getElementById('session-badge').textContent = '';
     document.getElementById('session-title').value = '';
     document.getElementById('episodes-heading').textContent = 'Generating episode plan…';
@@ -777,19 +1298,20 @@
     document.getElementById('synth-settings').style.display = 'none';
     document.getElementById('lang-bar').style.display = 'none';
     setReviewStatus('', '');
-    // Apply global voice preference (no session yet — session ID available after scripts return)
     applyVoicePref(null);
   }
 
   function populateConspect(data) {
     pushSessionUrl(data.session_id);
-    document.getElementById('session-badge').textContent = 'session ' + data.session_id;
+    const badge = document.getElementById('session-badge');
+    badge.textContent = 'session ' + data.session_id;
+    badge.style.display = '';
     document.getElementById('session-title').value = data.title || '';
     document.getElementById('episodes-heading').textContent =
       `${data.episode_count} episode${data.episode_count !== 1 ? 's' : ''} — expanding…`;
 
     const opBox = document.getElementById('operator-msg-box');
-    if (data.operator_message) { opBox.textContent = '⚠ ' + data.operator_message; opBox.style.display = 'block'; }
+    if (data.operator_message) { opBox.textContent = '⚠ ' + data.operator_message; opBox.style.display = 'flex'; }
     else opBox.style.display = 'none';
 
     const list = document.getElementById('episode-list');
@@ -810,7 +1332,7 @@
       <textarea class="script-area streaming" id="script-${ep.index}" rows="6"
         placeholder="Expanding…" readonly></textarea>
       <div class="episode-actions" id="actions-${ep.index}">
-        <div class="actions-left"><span style="font-size:0.78rem; color:#555">Waiting…</span></div>
+        <div class="actions-left"><span style="font-size:0.78rem; color:var(--text-4)">Waiting…</span></div>
         <div class="actions-right" id="downloads-${ep.index}"></div>
       </div>
     `;
@@ -827,7 +1349,6 @@
       `${total} episode${total !== 1 ? 's' : ''} ready`;
     document.getElementById('generate-all-row').style.display = 'flex';
     document.getElementById('synth-settings').style.display = 'block';
-    // Apply voice preference now that the settings panel is visible
     applyVoicePref(session_id);
     updateLangBar();
     setReviewStatus('', '');
@@ -844,7 +1365,7 @@
     scriptEl.value = '';
     scriptEl.readOnly = true;
     actionsEl.querySelector('.actions-left').innerHTML =
-      `<span style="font-size:0.78rem; color:#7ab8e8"><span class="spinner"></span> Expanding…</span>`;
+      `<span style="font-size:0.78rem; color:var(--blue)"><span class="spinner"></span> Expanding…</span>`;
 
     let text = '';
     try {
@@ -892,8 +1413,11 @@
     const actionsEl = document.getElementById(`actions-${index}`);
     actionsEl.querySelector('.actions-left').innerHTML = `
       <button class="btn btn-generate" id="gen-btn-${index}"
-        onclick="synthesizeEpisode(${index}, this)">Generate MP3</button>
-      <span class="save-indicator" id="save-ind-${index}">saved</span>
+        onclick="synthesizeEpisode(${index}, this)">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Generate MP3
+      </button>
+      <span class="save-indicator" id="save-ind-${index}">✓ saved</span>
     `;
   }
 
@@ -902,7 +1426,7 @@
     const card = document.getElementById(`episode-card-${index}`);
     if (card) card.classList.add('error-state');
     actionsEl.querySelector('.actions-left').innerHTML = `
-      <span style="color:#e87a7a; font-size:0.78rem">${escHtml(msg)}</span>
+      <span style="color:var(--red); font-size:0.78rem">${escHtml(msg)}</span>
       <button class="btn btn-retry btn-sm" onclick="retryExpand('${session_id}', ${index})">Retry expand</button>
     `;
   }
@@ -935,7 +1459,7 @@
       return;
     }
     const params = getSynthesisParams(textOverride);
-    const origText = btnEl.textContent;
+    const origText = btnEl.innerHTML;
     btnEl.disabled = true; btnEl.textContent = 'Queuing…';
     setReviewStatus('', '');
 
@@ -947,14 +1471,14 @@
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ detail: resp.statusText }));
         setReviewStatus(`Episode ${index}: ` + (err.detail ?? resp.statusText), 'error');
-        btnEl.disabled = false; btnEl.textContent = origText; return;
+        btnEl.disabled = false; btnEl.innerHTML = origText; return;
       }
       const { job_id } = await resp.json();
       btnEl.textContent = 'Generating…';
       await pollJob(job_id, index, btnEl, _activeLanguage);
     } catch (e) {
       setReviewStatus('Network error: ' + e.message, 'error');
-      btnEl.disabled = false; btnEl.textContent = origText;
+      btnEl.disabled = false; btnEl.innerHTML = origText;
     }
   }
 
@@ -976,10 +1500,12 @@
             a.className = 'btn btn-download';
             a.href = `/podcast/jobs/${job_id}/download`;
             a.download = job.filename || `episode_${episode_index}.mp3`;
-            a.textContent = `⬇ ${langLabel}`;
+            a.innerHTML = `⬇ ${langLabel}`;
             downloadsEl.appendChild(a);
           }
-          btnEl.disabled = false; btnEl.textContent = 'Generate MP3'; return;
+          btnEl.disabled = false;
+          btnEl.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Generate MP3`;
+          return;
         }
         if (job.status === 'failed') {
           setReviewStatus(`Episode ${episode_index} failed: ${job.error}`, 'error');
@@ -1009,7 +1535,7 @@
 
       const scriptEl = document.getElementById(`script-${ep.index}`);
       const textOverride = scriptEl?.value || undefined;
-      if (!textOverride) continue; // no text for this language
+      if (!textOverride) continue;
 
       btn.textContent = `Generating ${ep.index}/${currentSession.episodes.length}…`;
       const params = getSynthesisParams(textOverride);
@@ -1036,9 +1562,11 @@
 
     cancelBtn.style.display = 'none';
     btn.disabled = false;
-    btn.textContent = completed > 0
-      ? `Done — ${completed} episode${completed !== 1 ? 's' : ''} generated`
-      : 'Generate all episodes';
+    if (completed > 0) {
+      btn.innerHTML = `✓ Done — ${completed} episode${completed !== 1 ? 's' : ''} generated`;
+    } else {
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Generate all episodes`;
+    }
   });
 
   // ── New session ──
@@ -1050,6 +1578,7 @@
     clearSessionUrl();
     document.getElementById('review').style.display = 'none';
     document.getElementById('input-step').style.display = 'block';
+    document.getElementById('session-badge').style.display = 'none';
     setInputStatus('', '');
     renderHistory();
   });
@@ -1060,14 +1589,16 @@
     _activeLanguage = 'en';
     document.getElementById('input-step').style.display = 'none';
     document.getElementById('review').style.display = 'block';
-    document.getElementById('session-badge').textContent = 'session ' + data.session_id;
+    const badge = document.getElementById('session-badge');
+    badge.textContent = 'session ' + data.session_id;
+    badge.style.display = '';
     const title = data.title || '';
     document.getElementById('session-title').value = title;
     document.title = (title || 'Untitled') + ' — Spodkast';
     document.getElementById('cancel-expand-btn').style.display = 'none';
 
     const opBox = document.getElementById('operator-msg-box');
-    if (data.operator_message) { opBox.textContent = '⚠ ' + data.operator_message; opBox.style.display = 'block'; }
+    if (data.operator_message) { opBox.textContent = '⚠ ' + data.operator_message; opBox.style.display = 'flex'; }
     else opBox.style.display = 'none';
 
     const list = document.getElementById('episode-list');
@@ -1094,9 +1625,12 @@
           <div class="actions-left">
             ${hasText
               ? `<button class="btn btn-generate" id="gen-btn-${ep.index}"
-                   onclick="synthesizeEpisode(${ep.index}, this)">Generate MP3</button>
-                 <span class="save-indicator" id="save-ind-${ep.index}">saved</span>`
-              : `<span style="color:#555; font-size:0.78rem" id="pending-${ep.index}">Not yet expanded</span>`
+                   onclick="synthesizeEpisode(${ep.index}, this)">
+                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                   Generate MP3
+                 </button>
+                 <span class="save-indicator" id="save-ind-${ep.index}">✓ saved</span>`
+              : `<span style="color:var(--text-4); font-size:0.78rem" id="pending-${ep.index}">Not yet expanded</span>`
             }
           </div>
           <div class="actions-right" id="downloads-${ep.index}"></div>
@@ -1122,7 +1656,6 @@
 
     document.getElementById('synth-settings').style.display = 'block';
     document.getElementById('generate-all-row').style.display = 'flex';
-    // Restore saved voice preference for this session
     applyVoicePref(data.session_id);
     updateLangBar();
 
@@ -1181,6 +1714,7 @@
       currentSession = null;
       document.getElementById('review').style.display = 'none';
       document.getElementById('input-step').style.display = 'block';
+      document.getElementById('session-badge').style.display = 'none';
       renderHistory();
     }
   });
@@ -1206,8 +1740,8 @@
       const date  = new Date(s.saved_at).toLocaleString();
       const label = s.title ? escHtml(s.title) : `<span class="hi-id">${s.session_id}</span>`;
       item.innerHTML = `
-        <span>${label} <span style="color:#444">— ${s.episode_count} ep${s.episode_count !== 1 ? 's' : ''}</span></span>
-        <span style="display:flex; align-items:center; gap:0.6rem;">
+        <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${label} <span style="color:var(--text-4)">— ${s.episode_count} ep${s.episode_count !== 1 ? 's' : ''}</span></span>
+        <span style="display:flex; align-items:center; gap:0.5rem; flex-shrink:0;">
           <span class="hi-meta">${date}</span>
           <button class="btn btn-danger btn-sm" style="padding:0.2rem 0.5rem; font-size:0.72rem;"
             onclick="deleteSession('${s.session_id}', event)">✕</button>
@@ -1220,7 +1754,6 @@
 
   window.addEventListener('DOMContentLoaded', async () => {
     renderHistory();
-    // Load server voice config first so applyVoicePref uses the real configured defaults
     await loadServerVoiceConfig();
     const id = new URLSearchParams(location.search).get('s');
     if (id) {
@@ -1228,7 +1761,6 @@
       if (saved) { currentSession = saved; showReview(saved); }
       else history.replaceState({}, '', '/');
     } else {
-      // Preload global voice preference so it's ready if the user starts a new session
       applyVoicePref(null);
     }
   });

@@ -59,10 +59,8 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 1.5rem 1rem 3rem;
+      display: block;
+      padding: 0;
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
     }
@@ -70,7 +68,23 @@
     /* ── App wrapper ── */
     .app {
       width: 100%;
-      max-width: 800px;
+      max-width: 100%;
+      padding: 1.5rem 2rem 3rem;
+      box-sizing: border-box;
+    }
+
+    @media (min-width: 1200px) {
+      .app {
+        padding-left: 3rem;
+        padding-right: 3rem;
+      }
+    }
+
+    @media (min-width: 1600px) {
+      .app {
+        padding-left: 4rem;
+        padding-right: 4rem;
+      }
     }
 
     /* ── Top nav bar ── */
@@ -466,7 +480,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       padding: 1.1rem 1.25rem;
-      margin-bottom: 1.25rem;
+      margin-bottom: 0;
     }
     .synth-settings .options { margin-top: 0; }
 
@@ -493,6 +507,31 @@
       background: var(--accent-bg);
       padding: 0.15rem 0.4rem;
       border-radius: 4px;
+    }
+
+    /* ── Input two-column layout ── */
+    .input-body {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .input-sidebar .history-section { margin-top: 0; }
+
+    @media (min-width: 1024px) {
+      .input-body {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 2rem;
+      }
+      .input-main {
+        flex: 1 1 0;
+        min-width: 0;
+      }
+      .input-sidebar {
+        flex: 0 0 280px;
+        min-width: 240px;
+        max-width: 320px;
+      }
     }
 
     /* ── History ── */
@@ -523,6 +562,45 @@
 
     /* ── Review section ── */
     #review { display: none; }
+
+    .review-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .review-body {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 1024px) {
+      .review-body {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 2rem;
+      }
+      .review-sidebar {
+        flex: 0 0 280px;
+        min-width: 260px;
+        max-width: 320px;
+        position: sticky;
+        top: 1.5rem;
+      }
+      .review-main {
+        flex: 1 1 0;
+        min-width: 0;
+      }
+      .review-sidebar .options {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (min-width: 1400px) {
+      .review-sidebar {
+        flex: 0 0 320px;
+        max-width: 360px;
+      }
+    }
 
     .review-toolbar {
       display: flex;
@@ -688,8 +766,7 @@
 
     /* ── Mobile ── */
     @media (max-width: 640px) {
-      body { padding: 0 0 2rem; }
-      .app { max-width: 100%; }
+      .app { padding: 0 0 2rem; }
 
       .topbar {
         padding: 1rem 1rem 1rem;
@@ -724,7 +801,7 @@
     }
 
     @media (max-width: 400px) {
-      body { padding: 0 0 2rem; }
+      .app { padding: 0 0 2rem; }
       .topbar { padding: 0.9rem 0.85rem 0.9rem; }
       .card { padding: 1rem 0.85rem; }
     }
@@ -747,119 +824,132 @@
 
     <!-- ── Input step ── -->
     <div id="input-step">
+      <div class="input-body">
+        <div class="input-main">
+          <div class="tabs">
+            <button class="tab active" data-tab="text">Text</button>
+            <button class="tab" data-tab="url">URL</button>
+            <button class="tab" data-tab="file">File</button>
+          </div>
 
-      <div class="tabs">
-        <button class="tab active" data-tab="text">Text</button>
-        <button class="tab" data-tab="url">URL</button>
-        <button class="tab" data-tab="file">File</button>
-      </div>
+          <div class="panel active" id="panel-text">
+            <label for="text-input">Source material</label>
+            <textarea id="text-input" placeholder="Paste your article, notes, or any text here…"></textarea>
+          </div>
+          <div class="panel" id="panel-url">
+            <label for="url-input">Article URL</label>
+            <input type="text" id="url-input" placeholder="https://example.com/article">
+          </div>
+          <div class="panel" id="panel-file">
+            <div class="drop-zone" id="drop-zone">
+              <input type="file" id="file-input" accept=".txt,.md,.rst,.csv">
+              <span class="drop-zone-icon">📄</span>
+              Drop a text file here, or <u>click to browse</u>
+            </div>
+          </div>
 
-      <div class="panel active" id="panel-text">
-        <label for="text-input">Source material</label>
-        <textarea id="text-input" placeholder="Paste your article, notes, or any text here…"></textarea>
-      </div>
-      <div class="panel" id="panel-url">
-        <label for="url-input">Article URL</label>
-        <input type="text" id="url-input" placeholder="https://example.com/article">
-      </div>
-      <div class="panel" id="panel-file">
-        <div class="drop-zone" id="drop-zone">
-          <input type="file" id="file-input" accept=".txt,.md,.rst,.csv">
-          <span class="drop-zone-icon">📄</span>
-          Drop a text file here, or <u>click to browse</u>
+          <div class="submit-row">
+            <button class="btn btn-primary" id="submit-btn" style="flex:1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Generate scripts
+            </button>
+          </div>
+          <div class="status" id="input-status"></div>
         </div>
-      </div>
 
-      <div class="submit-row">
-        <button class="btn btn-primary" id="submit-btn" style="flex:1">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Generate scripts
-        </button>
-      </div>
-      <div class="status" id="input-status"></div>
-
-      <div id="history-section" class="history-section" style="display:none">
-        <div class="history-header">
-          <div class="section-label">Recent sessions</div>
+        <div class="input-sidebar">
+          <div id="history-section" class="history-section" style="display:none">
+            <div class="history-header">
+              <div class="section-label">Recent sessions</div>
+            </div>
+            <div id="history-list" class="history-list"></div>
+          </div>
         </div>
-        <div id="history-list" class="history-list"></div>
       </div>
     </div>
 
     <!-- ── Review step ── -->
     <div id="review">
-      <input class="session-title-input" id="session-title" placeholder="Untitled session" autocomplete="off">
-
-      <div id="operator-msg-box" class="operator-msg" style="display:none"></div>
-
-      <div class="review-toolbar">
-        <h2 id="episodes-heading">Generating episode plan…</h2>
-        <button class="btn btn-danger btn-sm" id="cancel-expand-btn" style="display:none">
-          ✕ Cancel
-        </button>
-        <button class="btn btn-secondary btn-sm" id="new-session-btn">← New</button>
-      </div>
-
-      <!-- Language bar -->
-      <div class="lang-bar" id="lang-bar" style="display:none"></div>
-
-      <!-- Synthesis settings -->
-      <div class="synth-settings" id="synth-settings" style="display:none">
-        <div class="section-label">Voice</div>
-        <div class="options" style="margin-top:0">
-          <div>
-            <label for="synth-voice">Voice preset</label>
-            <select id="synth-voice">
-              <option value="piTKgcLEGmPE4e6mEKli">Nicole — whisper / ASMR</option>
-              <option value="oWAxZDx7w5VEj9dCyTzz">Grace — calm, gentle</option>
-              <option value="XrExE9yKIg1WjnnlVkGX">Matilda — warm, soft</option>
-              <option value="pMsXgVXv3BLzUgSXRplE">Serena — serene, steady</option>
-              <option value="LcfcDJNUP1GQjkzn1xUU">Emily — soft, clear</option>
-              <option value="ThT5KcBeYPX3keUQqHPh">Dorothy — warm storyteller</option>
-              <option value="EXAVITQu4vr4xnSDxMaL">Sarah — gentle, expressive</option>
-            </select>
-          </div>
-          <div class="full" style="display:flex; gap:1.5rem; align-items:center; padding-top:0.25rem;">
-            <label class="checkbox-row"><input type="checkbox" id="synth-intro"> Include intro</label>
-            <label class="checkbox-row"><input type="checkbox" id="synth-outro"> Include outro</label>
-          </div>
-        </div>
-
-        <div class="voice-controls">
-          <div class="section-label" style="margin-top:0.9rem; margin-bottom:0.5rem;">Voice controls</div>
-          <div class="slider-grid">
-            <span class="slider-label">Speed</span>
-            <input type="range" id="synth-speed" min="0.7" max="1.3" step="0.05" value="1.0">
-            <span class="slider-val" id="synth-speed-val">1.00</span>
-
-            <span class="slider-label">Stability</span>
-            <input type="range" id="synth-stability" min="0" max="1" step="0.05" value="0.80">
-            <span class="slider-val" id="synth-stability-val">0.80</span>
-
-            <span class="slider-label">Similarity</span>
-            <input type="range" id="synth-similarity" min="0" max="1" step="0.05" value="0.75">
-            <span class="slider-val" id="synth-similarity-val">0.75</span>
-
-            <span class="slider-label">Style</span>
-            <input type="range" id="synth-style" min="0" max="1" step="0.05" value="0.10">
-            <span class="slider-val" id="synth-style-val">0.10</span>
-          </div>
-          <label class="checkbox-row" style="margin-top:0.65rem;">
-            <input type="checkbox" id="synth-speaker-boost"> Speaker boost
-          </label>
+      <div class="review-header">
+        <input class="session-title-input" id="session-title" placeholder="Untitled session" autocomplete="off">
+        <div id="operator-msg-box" class="operator-msg" style="display:none"></div>
+        <div class="review-toolbar">
+          <h2 id="episodes-heading">Generating episode plan…</h2>
+          <button class="btn btn-danger btn-sm" id="cancel-expand-btn" style="display:none">
+            ✕ Cancel
+          </button>
+          <button class="btn btn-secondary btn-sm" id="new-session-btn">← New</button>
         </div>
       </div>
 
-      <div class="episode-list" id="episode-list"></div>
+      <div class="review-body">
+        <!-- Sidebar: Language + Synthesis settings -->
+        <div class="review-sidebar">
+          <!-- Language bar -->
+          <div class="lang-bar" id="lang-bar" style="display:none"></div>
 
-      <div class="generate-all-row" id="generate-all-row" style="display:none">
-        <button class="btn btn-primary" id="generate-all-btn" style="flex:1">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Generate all episodes
-        </button>
+          <!-- Synthesis settings -->
+          <div class="synth-settings" id="synth-settings" style="display:none">
+            <div class="section-label">Voice</div>
+            <div class="options" style="margin-top:0">
+              <div>
+                <label for="synth-voice">Voice preset</label>
+                <select id="synth-voice">
+                  <option value="piTKgcLEGmPE4e6mEKli">Nicole — whisper / ASMR</option>
+                  <option value="oWAxZDx7w5VEj9dCyTzz">Grace — calm, gentle</option>
+                  <option value="XrExE9yKIg1WjnnlVkGX">Matilda — warm, soft</option>
+                  <option value="pMsXgVXv3BLzUgSXRplE">Serena — serene, steady</option>
+                  <option value="LcfcDJNUP1GQjkzn1xUU">Emily — soft, clear</option>
+                  <option value="ThT5KcBeYPX3keUQqHPh">Dorothy — warm storyteller</option>
+                  <option value="EXAVITQu4vr4xnSDxMaL">Sarah — gentle, expressive</option>
+                </select>
+              </div>
+              <div class="full" style="display:flex; gap:1.5rem; align-items:center; padding-top:0.25rem;">
+                <label class="checkbox-row"><input type="checkbox" id="synth-intro"> Include intro</label>
+                <label class="checkbox-row"><input type="checkbox" id="synth-outro"> Include outro</label>
+              </div>
+            </div>
+
+            <div class="voice-controls">
+              <div class="section-label" style="margin-top:0.9rem; margin-bottom:0.5rem;">Voice controls</div>
+              <div class="slider-grid">
+                <span class="slider-label">Speed</span>
+                <input type="range" id="synth-speed" min="0.7" max="1.3" step="0.05" value="1.0">
+                <span class="slider-val" id="synth-speed-val">1.00</span>
+
+                <span class="slider-label">Stability</span>
+                <input type="range" id="synth-stability" min="0" max="1" step="0.05" value="0.80">
+                <span class="slider-val" id="synth-stability-val">0.80</span>
+
+                <span class="slider-label">Similarity</span>
+                <input type="range" id="synth-similarity" min="0" max="1" step="0.05" value="0.75">
+                <span class="slider-val" id="synth-similarity-val">0.75</span>
+
+                <span class="slider-label">Style</span>
+                <input type="range" id="synth-style" min="0" max="1" step="0.05" value="0.10">
+                <span class="slider-val" id="synth-style-val">0.10</span>
+              </div>
+              <label class="checkbox-row" style="margin-top:0.65rem;">
+                <input type="checkbox" id="synth-speaker-boost"> Speaker boost
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main: Episode list -->
+        <div class="review-main">
+          <div class="episode-list" id="episode-list"></div>
+
+          <div class="generate-all-row" id="generate-all-row" style="display:none">
+            <button class="btn btn-primary" id="generate-all-btn" style="flex:1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Generate all episodes
+            </button>
+          </div>
+
+          <div class="status" id="review-status"></div>
+        </div>
       </div>
-
-      <div class="status" id="review-status"></div>
     </div>
 
   </div><!-- /card -->

@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     # Env var: OUTPUT_DIR
     output_dir: str = "./output"
 
+    # Database settings
+    # Env var: DB_PATH — path to the SQLite database file
+    db_path: str = "./spodkast.db"
+
     # Service settings
     # Env var: HOST
     host: str = "0.0.0.0"

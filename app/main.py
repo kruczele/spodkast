@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from app.config import get_settings
+from app.db import init_db
 from app.routers import podcast
 
 
@@ -61,6 +62,9 @@ async def lifespan(app: FastAPI):
 
     configure_logging(settings.log_level)
 
+    # Initialise the SQLite database (creates file + schema if needed)
+    init_db(db_path=settings.db_path)
+
     # Fail fast: ffmpeg is required for audio mixing
     if shutil.which("ffmpeg") is None:
         logger.error(
@@ -75,6 +79,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"   Supported languages: {settings.supported_languages}")
     logger.info(f"   ElevenLabs model: {settings.elevenlabs_model_id}")
     logger.info(f"   Output directory: {settings.output_dir}")
+    logger.info(f"   Database: {settings.db_path}")
 
     yield
 

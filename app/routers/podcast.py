@@ -754,6 +754,100 @@ def _get_session_or_404(session_id: str) -> sessions.Session:
     return session
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Cross-device session retrieval
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+@router.get("/sessions", summary="List persisted sessions (cross-device retrieval)")
+async def list_sessions(limit: int = 50, offset: int = 0) -> dict:
+    """
+    Return a paginated list of recent sessions stored in the database.
+    Use this endpoint to resume a session started on another device.
+    Sessions are ordered newest-first and filtered to exclude expired ones.
+    """
+    session_list = sessions.list_sessions(limit=limit, offset=offset)
+    return {
+        "sessions": [
+            {
+                "session_id": s.id,
+                "created_at": s.created_at.isoformat(),
+                "device_info": s.device_info,
+                "operator_message": s.operator_message,
+                "episode_count": len(s.episodes),
+                "episodes": [
+                    {
+                        "index": ep.index,
+                        "title": ep.title,
+                        "is_expanded": ep.is_expanded,
+                        "word_count": ep.word_count,
+                        "preview": ep.preview,
+                    }
+                    for ep in s.episodes
+                ],
+            }
+            for s in session_list
+        ],
+        "count": len(session_list),
+    }
+
+
+@router.get(
+    "/sessions/{session_id}",
+    summary="Retrieve a single session by ID",
+)
+async def get_session(session_id: str) -> ScriptsResponse:
+    """Return a session's metadata and episode plan. Useful for cross-device resume."""
+    session = _get_session_or_404(session_id)
+    return ScriptsResponse(
+        session_id=session.id,
+        episode_count=len(session.episodes),
+        operator_message=session.operator_message,
+        episodes=[
+            EpisodePreview(
+                index=ep.index, title=ep.title,
+                word_count=ep.word_count, preview=ep.preview, is_expanded=ep.is_expanded,
+            )
+            for ep in session.episodes
+        ],
+    )
+
+
+@router.delete(
+    "/sessions/{session_id}",
+    summary="Delete a session and all its episodes",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_session(session_id: str) -> None:
+    """Permanently remove a session and all its associated episodes from the database."""
+    deleted = sessions.delete(session_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found.")
+
+
+@router.get(
+    "/sessions/{session_id}/jobs",
+    summary="List synthesis jobs for a session",
+)
+async def list_session_jobs(session_id: str) -> dict:
+    """Return all synthesis jobs associated with this session."""
+    _get_session_or_404(session_id)
+    job_list = jobs.list_for_session(session_id)
+    return {
+        "jobs": [
+            {
+                "job_id": j.id,
+                "episode_idx": j.episode_idx,
+                "status": j.status,
+                "filename": j.filename,
+                "error": j.error,
+                "created_at": j.created_at.isoformat(),
+            }
+            for j in job_list
+        ]
+    }
+
+
 @router.patch(
     "/sessions/{session_id}/episodes/{episode_index}/text",
     summary="Update episode script text",
@@ -948,7 +1042,7 @@ async def synthesize_episode(
             detail="Session not found or expired. Provide text_override to synthesize without a live session.",
         )
 
-    job = jobs.create()
+    job = jobs.create(session_id=session_id, episode_idx=episode_index)
     background_tasks.add_task(_run_synthesis_job, job.id, session_id, episode_index, params)
     logger.info(f"Synthesis job {job.id} queued | session={session_id} ep={episode_index} lang={params.language}")
     return {"job_id": job.id, "status": job.status}

@@ -167,28 +167,50 @@ LANGUAGE_NAMES: dict[str, str] = {
 }
 
 
+TRANSLATE_SYSTEM_TEMPLATE = """\
+Translate the following podcast script to {lang_name}.
+Preserve the calm, low-stimulation tone and natural spoken language style.
+Return only the translated script — no headers, no notes, no extra text.\
+"""
+
+# Localization prompts per language — each one instructs the model to rewrite
+# the literal translation so it reads like native prose, not translated text.
+LOCALIZE_SYSTEM_TEMPLATE = """\
+You are a native {lang_name} editor specialising in spoken-word content.
+
+You will receive a podcast script that has been machine-translated from English
+into {lang_name}. The translation is accurate but may read as stiff, literal, or
+foreign-sounding.
+
+Your task:
+- Rewrite every sentence so it sounds natural and idiomatic in {lang_name}.
+- Fix literal calques, awkward word order, and un-{lang_name} phrasing.
+- Ensure rhythm and cadence feel native to {lang_name} listeners.
+- Keep the meaning, structure, length, and calm sleep-friendly tone exactly as-is.
+- Do NOT add, remove, or summarise content.
+- Return only the rewritten script — no headers, no notes, no extra text.\
+"""
+
+
 def translate_script(text: str, target_language: str, api_key: str) -> str:
     """
-    Translate a podcast script to the target language.
+    Stage 1 of the two-stage localization pipeline.
+    Produces a direct (possibly literal) translation of *text* into *target_language*.
     Preserves the calm, spoken-word style.
     """
     lang_name = LANGUAGE_NAMES.get(target_language, target_language)
     client = anthropic.Anthropic(api_key=api_key)
-    logger.info(f"Translating {len(text)} chars to {lang_name}")
+    logger.info(f"[Stage 1] Translating {len(text)} chars to {lang_name}")
 
     try:
         message = client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=20000,
-            system=(
-                f"Translate the following podcast script to {lang_name}. "
-                "Preserve the calm, low-stimulation tone and natural spoken language style. "
-                "Return only the translated script — no headers, no notes, no extra text."
-            ),
+            system=TRANSLATE_SYSTEM_TEMPLATE.format(lang_name=lang_name),
             messages=[{"role": "user", "content": text}],
         )
         translated = next(block.text for block in message.content if block.type == "text")
-        logger.info(f"Translation complete: {len(translated)} chars")
+        logger.info(f"[Stage 1] Translation complete: {len(translated)} chars")
         return translated
 
     except anthropic.AuthenticationError:
@@ -199,6 +221,47 @@ def translate_script(text: str, target_language: str, api_key: str) -> str:
         raise RuntimeError(f"Anthropic API error ({e.status_code}): {e.message}")
     except anthropic.APIConnectionError:
         raise RuntimeError("Failed to connect to Anthropic API")
+
+
+def localize_script(translated_text: str, target_language: str, api_key: str) -> str:
+    """
+    Stage 2 of the two-stage localization pipeline.
+    Takes the output of Stage 1 (a literal translation) and rewrites it to sound
+    natural and idiomatic in *target_language* while preserving meaning and tone.
+    """
+    lang_name = LANGUAGE_NAMES.get(target_language, target_language)
+    client = anthropic.Anthropic(api_key=api_key)
+    logger.info(f"[Stage 2] Localizing {len(translated_text)} chars into native {lang_name}")
+
+    try:
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=20000,
+            system=LOCALIZE_SYSTEM_TEMPLATE.format(lang_name=lang_name),
+            messages=[{"role": "user", "content": translated_text}],
+        )
+        localized = next(block.text for block in message.content if block.type == "text")
+        logger.info(f"[Stage 2] Localization complete: {len(localized)} chars")
+        return localized
+
+    except anthropic.AuthenticationError:
+        raise RuntimeError("Invalid Anthropic API key")
+    except anthropic.RateLimitError:
+        raise RuntimeError("Anthropic API rate limit exceeded")
+    except anthropic.APIStatusError as e:
+        raise RuntimeError(f"Anthropic API error ({e.status_code}): {e.message}")
+    except anthropic.APIConnectionError:
+        raise RuntimeError("Failed to connect to Anthropic API")
+
+
+def translate_and_localize(text: str, target_language: str, api_key: str) -> str:
+    """
+    Full two-stage localization pipeline (non-streaming, synchronous).
+    Stage 1: literal translation → Stage 2: idiomatic rewrite.
+    Use the streaming variant in the router for real-time UI feedback.
+    """
+    stage1 = translate_script(text, target_language, api_key)
+    return localize_script(stage1, target_language, api_key)
 
 
 def expand_episode(outlines: list[EpisodeOutline], episode_index: int, api_key: str) -> str:

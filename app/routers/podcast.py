@@ -23,7 +23,11 @@ import anthropic as _anthropic
 from app.config import get_settings
 from app.tts import synthesize_text
 from app.audio_mixer import mix_podcast
-from app.script_generator import generate_conspect, expand_episode, translate_script, EXPAND_SYSTEM, LANGUAGE_NAMES
+from app.script_generator import (
+    generate_conspect, expand_episode, translate_script, localize_script,
+    translate_and_localize, EXPAND_SYSTEM, LANGUAGE_NAMES,
+    TRANSLATE_SYSTEM_TEMPLATE, LOCALIZE_SYSTEM_TEMPLATE,
+)
 from app import sessions, jobs
 from app.jobs import JobStatus
 
@@ -798,28 +802,58 @@ async def translate_episode_endpoint(
         source_text = episode.text
 
     lang_name = LANGUAGE_NAMES.get(body.target_language, body.target_language)
-    logger.info(f"Streaming translation: session={session_id} ep={episode_index} → {lang_name}")
+    logger.info(f"Streaming two-stage localization: session={session_id} ep={episode_index} → {lang_name}")
 
-    async def stream_translation():
+    async def stream_two_stage_localization():
+        """
+        Two-stage localization pipeline streamed to the client.
+
+        Stage 1 (Translation): streams the direct translation in real-time.
+        Stage 2 (Localization): once Stage 1 is complete, re-streams the
+        idiomatic rewrite starting from a blank slate — clients will see the
+        final natural-sounding text accumulate progressively.
+        """
         client = _anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
         try:
+            # ── Stage 1: direct translation (streamed) ──────────────────────
+            logger.info(f"[Stage 1] Streaming translation → {lang_name}")
+            stage1_chunks: list[str] = []
             async with client.messages.stream(
                 model="claude-sonnet-4-6",
                 max_tokens=20000,
-                system=(
-                    f"Translate the following podcast script to {lang_name}. "
-                    "Preserve the calm, low-stimulation tone and natural spoken language style. "
-                    "Return only the translated script — no headers, no notes, no extra text."
-                ),
+                system=TRANSLATE_SYSTEM_TEMPLATE.format(lang_name=lang_name),
                 messages=[{"role": "user", "content": source_text}],
             ) as stream:
                 async for chunk in stream.text_stream:
+                    stage1_chunks.append(chunk)
                     yield chunk
+
+            stage1_text = "".join(stage1_chunks)
+            logger.info(f"[Stage 1] Complete: {len(stage1_text)} chars")
+
+            # ── Stage 2: idiomatic rewrite (streamed, replaces Stage 1 output) ──
+            # Signal the client to clear the current content and start Stage 2.
+            # We use a zero-width sentinel that the JS client can detect to wipe
+            # the textarea before the localized version streams in.
+            yield "\x00"  # NUL sentinel — client clears textarea on receipt
+
+            logger.info(f"[Stage 2] Streaming localization → native {lang_name}")
+            async with client.messages.stream(
+                model="claude-sonnet-4-6",
+                max_tokens=20000,
+                system=LOCALIZE_SYSTEM_TEMPLATE.format(lang_name=lang_name),
+                messages=[{"role": "user", "content": stage1_text}],
+            ) as stream:
+                async for chunk in stream.text_stream:
+                    yield chunk
+
+            logger.info(f"[Stage 2] Localization stream complete")
+
         except Exception as e:
-            logger.error(f"Translation stream error: {e}")
+            logger.error(f"Two-stage localization stream error: {e}")
             yield f"\n\n[ERROR: {e}]"
 
-    return StreamingResponse(stream_translation(), media_type="text/plain")
+    return StreamingResponse(stream_two_stage_localization(), media_type="text/plain")
 
 
 def _ensure_output_dir(settings) -> Path:
@@ -850,13 +884,13 @@ async def _run_synthesis_job(
                 raise RuntimeError("Episode not expanded.")
             text = episode.text
 
-        # Server-side translation only when no text_override (client didn't pre-translate)
+        # Server-side two-stage localization only when no text_override (client didn't pre-translate)
         if params.language != "en" and not params.text_override:
             if not settings.anthropic_api_key:
                 raise RuntimeError("ANTHROPIC_API_KEY required for translation.")
-            logger.info(f"Job {job_id}: translating to {params.language}")
+            logger.info(f"Job {job_id}: two-stage localization to {params.language}")
             text = await asyncio.to_thread(
-                translate_script, text, params.language, settings.anthropic_api_key
+                translate_and_localize, text, params.language, settings.anthropic_api_key
             )
 
         logger.info(f"Job {job_id}: synthesizing {len(text)} chars → {params.language}")

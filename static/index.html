@@ -264,7 +264,6 @@
         <div>
           <label for="synth-voice">Voice</label>
           <select id="synth-voice">
-            <option value="">Default (Nicole — whisper)</option>
             <option value="piTKgcLEGmPE4e6mEKli">Nicole — whisper / ASMR</option>
             <option value="oWAxZDx7w5VEj9dCyTzz">Grace — calm, gentle</option>
             <option value="XrExE9yKIg1WjnnlVkGX">Matilda — warm, soft</option>
@@ -364,6 +363,37 @@
   const LANG_FULL  = { en: 'English', pl: 'Polish', es: 'Spanish', de: 'German', fr: 'French', it: 'Italian', pt: 'Portuguese', ja: 'Japanese', zh: 'Chinese' };
   const TRANSLATABLE_LANGS = ['pl', 'es', 'de', 'fr', 'it', 'pt', 'ja', 'zh'];
 
+  // ── Server voice configuration ──
+  // Loaded from /podcast/languages on startup so we always know the real configured default.
+  let _serverVoiceMap = { en: 'piTKgcLEGmPE4e6mEKli', pl: 'piTKgcLEGmPE4e6mEKli', es: 'piTKgcLEGmPE4e6mEKli' };
+  async function loadServerVoiceConfig() {
+    try {
+      const resp = await fetch('/podcast/languages');
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data.voice_map) {
+        _serverVoiceMap = data.voice_map;
+        // Update the dropdown to annotate which voice is the server default
+        const voiceEl = document.getElementById('synth-voice');
+        if (voiceEl) {
+          for (const opt of voiceEl.options) {
+            // Strip any previous "(server default)" annotation
+            opt.textContent = opt.textContent.replace(/\s*\(server default\)$/, '');
+            if (opt.value === _serverVoiceMap['en']) {
+              opt.textContent += ' (server default)';
+            }
+          }
+          // If current selection is not a valid option, select the server default
+          if (!voiceEl.value) {
+            voiceEl.value = _serverVoiceMap['en'] || '';
+          }
+        }
+      }
+    } catch (e) {
+      // Non-fatal: fall back to hardcoded default
+    }
+  }
+
   // ── Session persistence ──
   const SESSIONS_KEY = 'spodkast_sessions';
   const VOICE_PREF_KEY = 'spodkast_voice_pref';
@@ -400,15 +430,24 @@
     );
     localStorage.setItem(SESSIONS_KEY, JSON.stringify(all));
   }
-  // Apply the correct voice to the dropdown, preferring session-level, then global, then default.
+  // Apply the correct voice to the dropdown, preferring session-level, then global, then server default.
   function applyVoicePref(session_id) {
     const voiceEl = document.getElementById('synth-voice');
     if (!voiceEl) return;
     const sessionPref = session_id ? loadSessionVoicePref(session_id) : null;
-    const voiceId = sessionPref !== null ? sessionPref : loadGlobalVoicePref();
+    const savedPref = sessionPref !== null ? sessionPref : loadGlobalVoicePref();
+    // Use saved preference if non-empty; otherwise fall back to server-configured default voice
+    const voiceId = savedPref || _serverVoiceMap[_activeLanguage] || _serverVoiceMap['en'] || '';
     voiceEl.value = voiceId;
-    // Fallback: if the saved value isn't a valid option, reset to default
-    if (voiceEl.value !== voiceId) voiceEl.value = '';
+    // If the saved ID isn't a valid option in the list, fall back to server default
+    if (voiceEl.value !== voiceId) {
+      const serverDefault = _serverVoiceMap[_activeLanguage] || _serverVoiceMap['en'] || '';
+      voiceEl.value = serverDefault;
+      // If server default isn't in the list either, select first available option
+      if (!voiceEl.value && voiceEl.options.length > 0) {
+        voiceEl.value = voiceEl.options[0].value;
+      }
+    }
   }
 
   // episode_texts structure: { [episode_index]: { en: "...", pl: "...", ... } }
@@ -459,9 +498,15 @@
   }
 
   function getSynthesisParams(textOverride) {
+    const voiceEl = document.getElementById('synth-voice');
+    // Always send an explicit voice_id — never leave it undefined/empty.
+    // If the dropdown has no selection (empty value), use the server-configured default
+    // for the active language so the backend never silently falls back to a different voice.
+    const rawVoiceId = voiceEl ? voiceEl.value : '';
+    const voice_id = rawVoiceId || _serverVoiceMap[_activeLanguage] || _serverVoiceMap['en'] || undefined;
     const p = {
       language: _activeLanguage,
-      voice_id: document.getElementById('synth-voice').value || undefined,
+      voice_id,
       include_intro: document.getElementById('synth-intro').checked,
       include_outro: document.getElementById('synth-outro').checked,
       speed:            parseFloat(document.getElementById('synth-speed').value),
@@ -1173,8 +1218,10 @@
     });
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('DOMContentLoaded', async () => {
     renderHistory();
+    // Load server voice config first so applyVoicePref uses the real configured defaults
+    await loadServerVoiceConfig();
     const id = new URLSearchParams(location.search).get('s');
     if (id) {
       const saved = loadSavedSessions().find(s => s.session_id === id);

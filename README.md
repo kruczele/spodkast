@@ -13,6 +13,7 @@ Designed for the **"goodnight read"** experience: warm, steady narration that's 
 - 🎚️ **Audio mixing** — FFmpeg-powered via Pydub (crossfade, normalization)
 - ⚡ **FastAPI service** — REST endpoints, auto-generated OpenAPI docs
 - 📝 **Production-grade** — structured logging (Loguru), input validation (Pydantic), error handling
+- 💾 **Session persistence** — SQLite database keeps sessions and jobs across restarts and devices
 
 ---
 
@@ -288,9 +289,73 @@ A typical 1,000-word article ≈ 6,000 characters.
 | `VOICE_ID_ES` | | `21m00Tcm4TlvDq8ikWAM` | Voice for Spanish |
 | `AUDIO_OUTPUT_FORMAT` | | `mp3_44100_128` | ElevenLabs output format |
 | `OUTPUT_DIR` | | `./output` | Directory for generated files |
+| `DB_PATH` | | `./spodkast.db` | SQLite database file path |
 | `HOST` | | `0.0.0.0` | Server host |
 | `PORT` | | `8000` | Server port |
 | `LOG_LEVEL` | | `INFO` | Logging level |
+
+---
+
+## Session Persistence & Multi-Device Access
+
+Spodkast uses a lightweight **SQLite database** (`spodkast.db` by default) to persist sessions and synthesis jobs across restarts and devices.
+
+### Database Schema
+
+```
+sessions
+  id               TEXT  PRIMARY KEY   — 12-char hex ID returned by /podcast/scripts
+  created_at       TEXT               — ISO-8601 UTC timestamp
+  device_info      TEXT               — optional free-form tag (e.g. "laptop", "iPhone")
+  operator_message TEXT               — Claude's message when source material was insufficient
+
+episodes
+  session_id  TEXT  REFERENCES sessions(id) ON DELETE CASCADE
+  idx         INT                    — 1-based episode index
+  title       TEXT
+  summary     TEXT                   — always present (from conspect)
+  text        TEXT                   — NULL until expanded via /expand
+
+jobs
+  id          TEXT  PRIMARY KEY       — 12-char hex ID
+  session_id  TEXT                   — linked session (may be NULL)
+  episode_idx INT                    — linked episode index (may be NULL)
+  status      TEXT                   — pending | running | done | failed
+  created_at  TEXT
+  output_path TEXT                   — path to generated MP3 on disk
+  filename    TEXT
+  error       TEXT
+```
+
+Sessions are retained for **7 days**; synthesis jobs for **7 days**.
+Expired rows are pruned lazily on the next write operation.
+
+### Cross-Device Usage
+
+1. **Start a session on Device A** — call `POST /podcast/scripts` to get a `session_id`.
+2. **Resume on Device B** — call `GET /podcast/sessions` to list all sessions, or
+   `GET /podcast/sessions/{session_id}` to fetch a specific one by ID.
+3. **Download a synthesized file** — call `GET /podcast/jobs/{job_id}/download` from
+   any device, as long as both devices share the same `OUTPUT_DIR` (or a network mount).
+
+For a networked multi-device setup, point `DB_PATH` and `OUTPUT_DIR` at a shared volume:
+
+```env
+DB_PATH=/shared/spodkast.db
+OUTPUT_DIR=/shared/output
+```
+
+> **Note**: SQLite WAL mode is enabled, so multiple concurrent readers are safe.
+> For high-concurrency write scenarios, consider upgrading to PostgreSQL.
+
+### New Cross-Device API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/podcast/sessions` | List all persisted sessions (newest first) |
+| `GET` | `/podcast/sessions/{id}` | Retrieve a single session |
+| `DELETE` | `/podcast/sessions/{id}` | Delete a session and its episodes |
+| `GET` | `/podcast/sessions/{id}/jobs` | List synthesis jobs for a session |
 
 ---
 

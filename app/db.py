@@ -17,10 +17,19 @@ episodes
     text        TEXT               -- NULL until expanded
     PRIMARY KEY (session_id, idx)
 
+episode_translations
+    session_id  TEXT    NOT NULL
+    episode_idx INTEGER NOT NULL
+    language    TEXT    NOT NULL   -- BCP-47 language code (e.g. 'pl', 'es')
+    text        TEXT    NOT NULL   -- translated/localized script
+    created_at  TEXT    NOT NULL   -- ISO-8601 UTC timestamp
+    PRIMARY KEY (session_id, episode_idx, language)
+
 jobs
     id          TEXT PRIMARY KEY   -- 12-char hex UUID
     session_id  TEXT               -- NULL allowed (job may not be tied to a live session)
     episode_idx INTEGER            -- NULL allowed
+    language    TEXT NOT NULL      -- language code for which audio was synthesized
     status      TEXT NOT NULL      -- pending | running | done | failed
     created_at  TEXT NOT NULL      -- ISO-8601 UTC timestamp
     output_path TEXT               -- set when done
@@ -78,10 +87,21 @@ CREATE TABLE IF NOT EXISTS episodes (
     PRIMARY KEY (session_id, idx)
 );
 
+CREATE TABLE IF NOT EXISTS episode_translations (
+    session_id  TEXT    NOT NULL,
+    episode_idx INTEGER NOT NULL,
+    language    TEXT    NOT NULL,
+    text        TEXT    NOT NULL,
+    created_at  TEXT    NOT NULL,
+    PRIMARY KEY (session_id, episode_idx, language),
+    FOREIGN KEY (session_id, episode_idx) REFERENCES episodes(session_id, idx) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS jobs (
     id          TEXT    PRIMARY KEY,
     session_id  TEXT,
     episode_idx INTEGER,
+    language    TEXT    NOT NULL DEFAULT 'en',
     status      TEXT    NOT NULL DEFAULT 'pending',
     created_at  TEXT    NOT NULL,
     output_path TEXT,
@@ -110,6 +130,28 @@ def _make_connection() -> sqlite3.Connection:
 _conn: sqlite3.Connection | None = None
 
 
+def _apply_migrations(conn: sqlite3.Connection) -> None:
+    """
+    Apply incremental schema migrations for databases that pre-date the
+    current schema version.  Each migration is guarded so it only runs once
+    (SQLite's ALTER TABLE is idempotent-by-catch pattern).
+    """
+    # Migration 1: add `language` column to `jobs` (introduced with restartable LLM processes)
+    existing_cols = {
+        row[1]
+        for row in conn.execute("PRAGMA table_info(jobs)").fetchall()
+    }
+    if "language" not in existing_cols:
+        conn.execute("ALTER TABLE jobs ADD COLUMN language TEXT NOT NULL DEFAULT 'en'")
+        logger.info("Migration: added 'language' column to jobs table")
+
+    # Ensure the composite index exists (safe to run after language column is present)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_jobs_session_ep_lang "
+        "ON jobs (session_id, episode_idx, language)"
+    )
+
+
 def init_db(db_path: str | None = None) -> None:
     """
     Initialise the database: create the file (if needed) and apply the schema.
@@ -130,6 +172,7 @@ def init_db(db_path: str | None = None) -> None:
     with _lock:
         _conn = _make_connection()
         _conn.executescript(_SCHEMA_SQL)
+        _apply_migrations(_conn)
         _conn.commit()
 
     logger.info(f"📦 Spodkast DB initialised at {_DB_PATH!r}")

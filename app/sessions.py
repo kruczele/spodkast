@@ -150,6 +150,29 @@ def update_episode_text(session_id: str, episode_index: int, text: str) -> None:
         )
 
 
+def get_translation(session_id: str, episode_index: int, language: str) -> Optional[str]:
+    """Return a previously stored translation, or None if not found."""
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT text FROM episode_translations "
+            "WHERE session_id = ? AND episode_idx = ? AND language = ?",
+            (session_id, episode_index, language),
+        ).fetchone()
+    return row["text"] if row else None
+
+
+def upsert_translation(session_id: str, episode_index: int, language: str, text: str) -> None:
+    """Store (or replace) a translated episode script."""
+    now = datetime.now(timezone.utc).isoformat()
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO episode_translations (session_id, episode_idx, language, text, created_at) "
+            "VALUES (?, ?, ?, ?, ?) "
+            "ON CONFLICT(session_id, episode_idx, language) DO UPDATE SET text = excluded.text, created_at = excluded.created_at",
+            (session_id, episode_index, language, text, now),
+        )
+
+
 def list_sessions(limit: int = 100, offset: int = 0) -> list[Session]:
     """
     Return recent sessions (newest first), useful for cross-device browsing.

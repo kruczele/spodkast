@@ -695,25 +695,39 @@ async def generate_scripts_endpoint(request: ScriptsRequest) -> ScriptsResponse:
     response_class=StreamingResponse,
     responses={200: {"content": {"text/plain": {}}, "description": "Episode script streamed as plain text."}},
 )
-async def expand_episode_endpoint(session_id: str, episode_index: int) -> StreamingResponse:
+async def expand_episode_endpoint(
+    session_id: str,
+    episode_index: int,
+    force: bool = False,
+) -> StreamingResponse:
     """
     Streams a full 1500-2000 word episode script using only the compact episode plan.
     The original source text is NOT re-sent to the model.
     Saves the complete text to the session once streaming finishes.
+
+    If the episode has already been expanded, the existing text is returned immediately
+    (without calling the LLM) unless *force=true* is passed as a query parameter.
+    This makes the endpoint safe to retry after partial failures.
     """
     session = _get_session_or_404(session_id)
     episode = session.get_episode(episode_index)
     if episode is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Episode {episode_index} not found.")
 
+    # ── Idempotency: return cached text when already expanded ────────────────
+    if episode.is_expanded and not force:
+        logger.info(
+            f"Episode {episode_index} already expanded (session={session_id}); returning cached text"
+        )
+
+        async def stream_cached():
+            yield episode.text
+
+        return StreamingResponse(stream_cached(), media_type="text/plain")
+
     settings = get_settings()
     if not settings.anthropic_api_key:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="ANTHROPIC_API_KEY is not configured.")
-
-    outlines = [
-        type("EpisodeOutline", (), {"index": ep.index, "title": ep.title, "summary": ep.summary})()
-        for ep in session.episodes
-    ]
 
     # Build user content (same logic as expand_episode in script_generator)
     plan_lines = []
@@ -870,12 +884,19 @@ async def update_episode_text_endpoint(
     responses={200: {"content": {"text/plain": {}}}},
 )
 async def translate_episode_endpoint(
-    session_id: str, episode_index: int, body: TranslateRequest
+    session_id: str,
+    episode_index: int,
+    body: TranslateRequest,
+    force: bool = False,
 ) -> StreamingResponse:
     """
     Stream a translation of the episode script to the target language.
     source_text in the body is used if provided; otherwise falls back to the
     session-stored English script.
+
+    If a translation for the same episode and language already exists in the
+    database, it is returned immediately without calling the LLM again.
+    Pass *force=true* to discard the cached translation and regenerate.
     """
     settings = get_settings()
     if not settings.anthropic_api_key:
@@ -883,6 +904,20 @@ async def translate_episode_endpoint(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="ANTHROPIC_API_KEY is required for translation.",
         )
+
+    # ── Idempotency: return cached translation when available ────────────────
+    if not force and not body.source_text:
+        cached = sessions.get_translation(session_id, episode_index, body.target_language)
+        if cached:
+            logger.info(
+                f"Returning cached translation: session={session_id} ep={episode_index} "
+                f"lang={body.target_language}"
+            )
+
+            async def stream_cached_translation():
+                yield cached
+
+            return StreamingResponse(stream_cached_translation(), media_type="text/plain")
 
     source_text = body.source_text
     if not source_text:
@@ -898,6 +933,8 @@ async def translate_episode_endpoint(
     lang_name = LANGUAGE_NAMES.get(body.target_language, body.target_language)
     logger.info(f"Streaming two-stage localization: session={session_id} ep={episode_index} → {lang_name}")
 
+    target_language = body.target_language
+
     async def stream_two_stage_localization():
         """
         Two-stage localization pipeline streamed to the client.
@@ -906,6 +943,7 @@ async def translate_episode_endpoint(
         Stage 2 (Localization): once Stage 1 is complete, re-streams the
         idiomatic rewrite starting from a blank slate — clients will see the
         final natural-sounding text accumulate progressively.
+        The final localized text is persisted to the DB for future restarts.
         """
         client = _anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
         try:
@@ -932,6 +970,7 @@ async def translate_episode_endpoint(
             yield "\x00"  # NUL sentinel — client clears textarea on receipt
 
             logger.info(f"[Stage 2] Streaming localization → native {lang_name}")
+            stage2_chunks: list[str] = []
             async with client.messages.stream(
                 model="claude-sonnet-4-6",
                 max_tokens=20000,
@@ -939,9 +978,15 @@ async def translate_episode_endpoint(
                 messages=[{"role": "user", "content": stage1_text}],
             ) as stream:
                 async for chunk in stream.text_stream:
+                    stage2_chunks.append(chunk)
                     yield chunk
 
-            logger.info(f"[Stage 2] Localization stream complete")
+            # Persist the final localized text so the process is restartable
+            final_text = "".join(stage2_chunks)
+            sessions.upsert_translation(session_id, episode_index, target_language, final_text)
+            logger.info(
+                f"[Stage 2] Localization stream complete ({len(final_text)} chars); translation cached"
+            )
 
         except Exception as e:
             logger.error(f"Two-stage localization stream error: {e}")
@@ -1023,11 +1068,26 @@ async def synthesize_episode(
     episode_index: int,
     background_tasks: BackgroundTasks,
     params: SynthesisParams = SynthesisParams(),
+    force: bool = False,
 ) -> dict:
     """
     Enqueues a background synthesis job. Returns immediately with a job_id.
     Poll GET /podcast/jobs/{job_id} for status; download via GET /podcast/jobs/{job_id}/download.
+
+    If a completed job already exists for this session/episode/language combination,
+    its job_id is returned immediately without starting a new job.
+    Pass *force=true* to ignore the cached job and re-synthesize.
     """
+    # ── Idempotency: return existing completed job if available ──────────────
+    if not force:
+        existing = jobs.find_done(session_id, episode_index, params.language)
+        if existing:
+            logger.info(
+                f"Returning existing completed job {existing.id} | "
+                f"session={session_id} ep={episode_index} lang={params.language}"
+            )
+            return {"job_id": existing.id, "status": existing.status}
+
     # Validate episode exists (session may be gone after restart — text_override still works)
     session = sessions.get(session_id)
     if session:
@@ -1042,7 +1102,7 @@ async def synthesize_episode(
             detail="Session not found or expired. Provide text_override to synthesize without a live session.",
         )
 
-    job = jobs.create(session_id=session_id, episode_idx=episode_index)
+    job = jobs.create(session_id=session_id, episode_idx=episode_index, language=params.language)
     background_tasks.add_task(_run_synthesis_job, job.id, session_id, episode_index, params)
     logger.info(f"Synthesis job {job.id} queued | session={session_id} ep={episode_index} lang={params.language}")
     return {"job_id": job.id, "status": job.status}

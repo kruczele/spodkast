@@ -33,6 +33,7 @@ class SynthesisJob:
     filename: Optional[str] = None
     session_id: Optional[str] = None
     episode_idx: Optional[int] = None
+    language: str = "en"
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def is_expired(self) -> bool:
@@ -54,6 +55,7 @@ def _row_to_job(row) -> SynthesisJob:
         filename=row["filename"],
         session_id=row["session_id"],
         episode_idx=row["episode_idx"],
+        language=row["language"] if row["language"] else "en",
         created_at=created_at,
     )
 
@@ -64,6 +66,7 @@ def _row_to_job(row) -> SynthesisJob:
 def create(
     session_id: Optional[str] = None,
     episode_idx: Optional[int] = None,
+    language: str = "en",
 ) -> SynthesisJob:
     """Create and persist a new synthesis job, then return it."""
     _purge_expired()
@@ -73,8 +76,8 @@ def create(
 
     with get_conn() as conn:
         conn.execute(
-            "INSERT INTO jobs (id, session_id, episode_idx, status, created_at) VALUES (?, ?, ?, ?, ?)",
-            (job_id, session_id, episode_idx, JobStatus.PENDING.value, now),
+            "INSERT INTO jobs (id, session_id, episode_idx, language, status, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (job_id, session_id, episode_idx, language, JobStatus.PENDING.value, now),
         )
 
     return SynthesisJob(
@@ -82,6 +85,7 @@ def create(
         status=JobStatus.PENDING,
         session_id=session_id,
         episode_idx=episode_idx,
+        language=language,
         created_at=datetime.fromisoformat(now),
     )
 
@@ -90,9 +94,26 @@ def get(job_id: str) -> Optional[SynthesisJob]:
     """Retrieve a job by ID, or None if not found / expired."""
     with get_conn() as conn:
         row = conn.execute(
-            "SELECT id, session_id, episode_idx, status, created_at, output_path, filename, error "
+            "SELECT id, session_id, episode_idx, language, status, created_at, output_path, filename, error "
             "FROM jobs WHERE id = ?",
             (job_id,),
+        ).fetchone()
+
+    if row is None:
+        return None
+
+    job = _row_to_job(row)
+    return None if job.is_expired() else job
+
+
+def find_done(session_id: str, episode_idx: int, language: str) -> Optional[SynthesisJob]:
+    """Return an existing completed job for the given episode+language, or None."""
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT id, session_id, episode_idx, language, status, created_at, output_path, filename, error "
+            "FROM jobs WHERE session_id = ? AND episode_idx = ? AND language = ? AND status = ? "
+            "ORDER BY created_at DESC LIMIT 1",
+            (session_id, episode_idx, language, JobStatus.DONE.value),
         ).fetchone()
 
     if row is None:
@@ -128,7 +149,7 @@ def list_for_session(session_id: str) -> list[SynthesisJob]:
     """Return all non-expired jobs for a given session (newest first)."""
     with get_conn() as conn:
         rows = conn.execute(
-            "SELECT id, session_id, episode_idx, status, created_at, output_path, filename, error "
+            "SELECT id, session_id, episode_idx, language, status, created_at, output_path, filename, error "
             "FROM jobs WHERE session_id = ? ORDER BY created_at DESC",
             (session_id,),
         ).fetchall()
